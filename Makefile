@@ -1,6 +1,6 @@
-all-deb: 00-deb 01-deb 02-deb
+deb: 00-deb 01-deb 02-deb
 
-all-rel: 00-rel 01-rel 02-rel
+rel: 00-rel 01-rel 02-rel
 
 00-deb:
 	gcc -Wall -g -o 00-mouse 00-mouse.c
