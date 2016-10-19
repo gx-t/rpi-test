@@ -22,7 +22,7 @@ int main() {
 	asm("vadd.f32 q10, q9, q8");
 	asm("vadd.f32 q10, q9, q8");
 	asm("vadd.f32 q10, q9, q8");
-//	float32_t p3 = vaddvq_f32(p0);
+	//	float32_t p3 = vaddvq_f32(p0);
 
 
 
@@ -36,29 +36,29 @@ void ctrl_c(int sig) {
 
 int main() {
 	signal(SIGINT, ctrl_c);
-    float c0 = 1.0, s0 = 0.0, f0 = FREQ_F32(150);
-    float c1 = 1.0, s1 = 0.0, f1 = FREQ_F32(157);
-    float buff[4800 * 2];
-    float *p, *end = &buff[4800 * 2];
+	float c0 = 1.0, s0 = 0.0, f0 = FREQ_F32(150);
+	float c1 = 1.0, s1 = 0.0, f1 = FREQ_F32(157);
+	float buff[4800 * 2];
+	float *p, *end = &buff[4800 * 2];
 
-    while(running) {
-        p = buff;
+	while(running) {
+		p = buff;
 
-        while(p < end) {
+		while(p < end) {
 
-            c0 -= s0 * f0;
-            s0 += c0 * f0;
+			c0 -= s0 * f0;
+			s0 += c0 * f0;
 
-            c1 -= s1 * f1;
-            s1 += c1 * f1;
+			c1 -= s1 * f1;
+			s1 += c1 * f1;
 
-            *p ++ = s0;
-            *p ++ = s1;
+			*p ++ = s0;
+			*p ++ = s1;
 
-        }
+		}
 		write(1, buff, sizeof(buff));
-    }
-    return 0;
+	}
+	return 0;
 }
 
 
