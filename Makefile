@@ -15,9 +15,9 @@ rel: 00-rel 01-rel 02-rel
 
 
 02-deb:
-	gcc -Wall -g -march=armv8-a+crc -mfpu=neon -ftree-vectorize -o 02-neon 02-neon.c
+	gcc -Wall -g -march=armv8-a+crc -mcpu=cortex-a53 -mfpu=neon -ftree-vectorize -o 02-neon 02-neon.c
 02-rel:
-	gcc -Wall -O2 -march=armv8-a+crc -mfpu=neon -ftree-vectorize -s -o 02-neon 02-neon.c
+	gcc -Wall -O3 -march=armv8-a+crc -mcpu=cortex-a53 -mfpu=neon -ftree-vectorize -s -o 02-neon 02-neon.c
 
 
 clean:
