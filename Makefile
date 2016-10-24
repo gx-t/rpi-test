@@ -30,4 +30,4 @@ clean:
 	rm -rf 00-mouse 01-keyboard 02-neon 03-camera
 
 asm:
-	gcc -c -g -mcpu=cortex-a53 -mfpu=neon 02-neon.c -Wa,-a,-ad -O3 > 02-neon-4.asm
+	gcc -c -g -mcpu=cortex-a53 -mfpu=neon 02-neon.c -Wa,-a,-ad -O3 > 02-neon.asm
