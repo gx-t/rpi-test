@@ -52,7 +52,7 @@ static int req_buff() {
 	return 0;
 }
 
-static int query_buf() {
+static int map_device() {
 	uint32_t i;
 
 	for(i = 0; i < BUFF_COUNT; i ++) {
@@ -78,7 +78,7 @@ static int query_buf() {
 	return 0;
 }
 
-static void unmap_dev_mem() {
+static void unmap_device() {
 	uint32_t i;
 
 	for(i = 0; i < BUFF_COUNT; i ++) {
@@ -125,7 +125,7 @@ static int stop_capture() {
 	return 0;
 }
 
-static int read_block() {
+static int handle_block() {
 	struct v4l2_buffer buf = {
 		.type = V4L2_BUF_TYPE_VIDEO_CAPTURE,
 		.memory = V4L2_MEMORY_MMAP
@@ -158,15 +158,15 @@ int main() {
 		perror(dev_name);
 		return 1;
 	}
-	if(set_fmt() || req_buff() || query_buf()) {
+	if(set_fmt() || req_buff() || map_device()) {
 		close(fd);
 		return 2;
 	}
 	if(!start_capture()) {
-		while(running && !read_block());
+		while(running && !handle_block());
 		stop_capture();
 	}
-	unmap_dev_mem();
+	unmap_device();
 	close(fd);
 	fprintf(stderr, "\n.END\n");
 	return 0;
