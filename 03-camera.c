@@ -1,4 +1,6 @@
-// !VoCam264
+// !VoCam264 USB 0c45:6366
+// /dev/video0 - MJPEG
+// /dev/video1 - H264
 // https://gist.github.com/maxlapshin/1253534
 
 #include <stdio.h>
@@ -20,7 +22,7 @@ struct {
 static int fd = 0;
 static int running = 1;
 
-static const char* dev_name = "/dev/video0";
+static const char* dev_name = "/dev/video1";
 
 static int set_fmt() {
 	struct v4l2_format fmt = {
