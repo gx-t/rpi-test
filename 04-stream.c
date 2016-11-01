@@ -15,7 +15,13 @@ static void set_conn_timeout() {
 
 static const char* curr_time() {
 	time_t tt = time(0);
-	return asctime(localtime(&tt));
+	char* ct = asctime(localtime(&tt));
+
+	char* pp = ct;
+	while(*pp != '\n') pp++;
+	*pp = 0;
+
+	return ct;
 }
 
 int main(int argc, char* argv[]) {
