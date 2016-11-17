@@ -153,6 +153,7 @@ static void ctrl_c(int sig) {
 
 int main(int argc, char* argv[]) {
 	if(argc != 2) {
+		fprintf(stderr, "Usage: %s /dev/video<x>\n", argv[0]);
 		return 1;
 	}
 	signal(SIGINT, ctrl_c);

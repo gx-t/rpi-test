@@ -25,7 +25,8 @@ static const char* curr_time() {
 }
 
 int main(int argc, char* argv[]) {
-	if(argc != 3) {
+	if(argc < 2) {
+		fprintf(stderr, "Usage: %s <child full path> <...child args>\n", argv[0]);
 		return 1;
 	}
 	int ss = socket(AF_INET, SOCK_STREAM, 0);
