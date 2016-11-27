@@ -35,7 +35,7 @@ int main(int argc, char *argv[]) {
 				"\t./02-neon 159 5.7 3 | play -r 48k -t raw -e floating-point -b 32 -c 2 -V3 -\n" , argv[0]);
 		return 1;
 	}
-	float fc = str_to_float(argv[1], 100, 1000);
+	float fc = str_to_float(argv[1], 100, 500);
 	float fb = str_to_float(argv[2], 2, 20);
 	float t = str_to_float(argv[3], 1, 60);
 	
