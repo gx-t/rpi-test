@@ -11,7 +11,7 @@
 #define FREQ_F32(f_)	((f_) * 2 * PI / SAMP_RATE)
 
 static float str_to_float(char* str_val, float min, float max) {
-	float val = atof(str_val);
+	float val = strtod(str_val, 0);
 	if(val < min) {
 		fprintf(stderr, "%s is out of range, setting minimum: %g\n", str_val, min);
 		return min;
