@@ -41,9 +41,14 @@ rel: 00-rel 01-rel 02-rel 03-rel 04-rel 05-rel
 05-rel:
 	$(CC) -Wall -O2 -s -mcpu=cortex-a53 -mfpu=neon -mtune=cortex-a53 -o 05-neon 05-neon.c
 
+06-deb:
+	$(CC) -Wall -g -mcpu=cortex-a53 -mfpu=neon -mtune=cortex-a53 -o 06-fb 06-fb.c
+06-rel:
+	$(CC) -Wall -O2 -s -mcpu=cortex-a53 -mfpu=neon -mtune=cortex-a53 -o 06-fb 06-fb.c
+
 
 clean:
-	rm -rf 00-mouse 01-keyboard 02-neon 03-camera 04-stream 05-neon rm *.s
+	rm -rf 00-mouse 01-keyboard 02-neon 03-camera 04-stream 05-neon 06-fb rm *.s
 
 asm:
 #	$(CC) -c -O2 -mcpu=cortex-a53 -mfpu=neon 02-neon.c -mtune=cortex-a53 -Wa,-a,-ad > 02-neon.asm
