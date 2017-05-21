@@ -8,14 +8,16 @@
 #include <sys/ioctl.h>
 
 struct {
-	uint32_t xres;
-	uint32_t yres;
-	uint32_t bits_per_pixel;
-	uint32_t xoffset;
-	uint32_t yoffset;
-	uint32_t line_length;
-	uint32_t screen_size;
-	uint8_t* fbp;
+	struct {
+		uint32_t xres;
+		uint32_t yres;
+		uint32_t bits_per_pixel;
+		uint32_t xoffset;
+		uint32_t yoffset;
+		uint32_t line_length;
+		uint32_t size;
+		uint8_t* fbp;
+	} screen;
 }static g;
 
 static void draw_oval(unsigned char* rgba, int x, int y, int cx, int cy, int r, int ax, int ay) {
@@ -53,6 +55,8 @@ static void draw(unsigned char* rgba, int x, int y) {
 	draw_filled_oval(rgba, x, y, 500, 500, 30, 1, 1, 0x0000FF00);
 }
 
+//-----------------------------------------------------------------------------
+
 static int init_fb()
 {
 	int ret = 0;
@@ -77,21 +81,21 @@ static int init_fb()
 			ret = 3;
 			break;
 		}
-		g.xres = vinfo.xres;
-		g.yres = vinfo.yres;
-		g.bits_per_pixel = vinfo.bits_per_pixel;
-		g.line_length = finfo.line_length;
+		g.screen.xres = vinfo.xres;
+		g.screen.yres = vinfo.yres;
+		g.screen.bits_per_pixel = vinfo.bits_per_pixel;
+		g.screen.line_length = finfo.line_length;
 
-		printf("%dx%d, %dbpp\n", g.xres, g.yres, g.bits_per_pixel);
+		printf("%dx%d, %dbpp\n", g.screen.xres, g.screen.yres, g.screen.bits_per_pixel);
 
-		g.screen_size = g.xres * g.yres * g.bits_per_pixel / 8;
+		g.screen.size = g.screen.xres * g.screen.yres * g.screen.bits_per_pixel / 8;
 
-		g.fbp = (unsigned char *)mmap(0, g.screen_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+		g.screen.fbp = (unsigned char *)mmap(0, g.screen.size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 	} while(0);
 
 	close(fd);
 
-	if ((int)g.fbp == -1) {
+	if ((int)g.screen.fbp == -1) {
 		perror("Error: failed to map framebuffer device to memory");
 		return 4;
 	}
@@ -102,18 +106,18 @@ static int init_fb()
 
 static void free_fb()
 {
-	munmap(g.fbp, g.screen_size);
+	munmap(g.screen.fbp, g.screen.size);
 }
 
 static void draw_fb()
 {
 	uint32_t x = 0, y = 0;
 	uint32_t offset = 0;
-	for (y = 0; y < g.yres; y++) {
-		for (x = 0; x < g.xres; x++) {
+	for (y = 0; y < g.screen.yres; y++) {
+		for (x = 0; x < g.screen.xres; x++) {
 
-			offset = (x + g.xoffset) * (g.bits_per_pixel / 8) + (y + g.yoffset) * g.line_length;
-			draw(g.fbp + offset, x, y);
+			offset = (x + g.screen.xoffset) * (g.screen.bits_per_pixel / 8) + (y + g.screen.yoffset) * g.screen.line_length;
+			draw(g.screen.fbp + offset, x, y);
 
 		}
 	}
