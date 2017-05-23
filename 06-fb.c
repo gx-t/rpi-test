@@ -18,24 +18,18 @@ struct {
 		uint32_t size;
 		uint8_t* fbp;
 	} screen;
+	struct {
+		uint32_t x;
+		uint32_t y;
+		uint8_t* pp;
+	} scan;
 }static g;
 
-static void draw_oval(unsigned char* rgba, int x, int y, int cx, int cy, int r, int ax, int ay) {
-	x -= cx;
-	y -= cy;
-	x *= ax;
-	y *= ay;
-	int xx = x * x + y * y;
-	int rr = r * r;
-	if(xx > rr - 100 && xx < rr + 100) {
-		rgba[0] = 0x00;
-		rgba[1] = 0x00;
-		rgba[2] = 0xFF;
-		rgba[3] = 0;
-	}
-}
-
-static void draw_filled_oval(unsigned char* rgba, int x, int y, int cx, int cy, int r, int ax, int ay, int color) {
+static void draw_filled_oval(int cx, int cy, int r, int ax, int ay, int color) {
+	uint32_t x = g.scan.x;
+	uint32_t y = g.scan.y;
+	uint8_t* rgba = g.scan.pp;
+	
 	x -= cx;
 	y -= cy;
 	x *= ax;
@@ -50,9 +44,20 @@ static void draw_filled_oval(unsigned char* rgba, int x, int y, int cx, int cy, 
 	}
 }
 
-static void draw(unsigned char* rgba, int x, int y) {
-	draw_filled_oval(rgba, x, y, 500, 500, 70, 1, 2, 0x000000FF);
-	draw_filled_oval(rgba, x, y, 500, 500, 30, 1, 1, 0x0000FF00);
+static void draw() {
+	uint32_t w = g.screen.xres;
+	uint32_t h = g.screen.yres;
+	uint32_t x;
+	uint32_t y;
+	w -= 140;
+	h -= 70;
+	for(y = 70; y < h; y += 70) {
+		for(x = 140; x < w; x += 140) {
+			draw_filled_oval(x, y, 70, 1, 2, 0x000000FF);
+			draw_filled_oval(x + 70, y + 35, 30, 1, 1, 0x0000FF00);
+		}
+	}
+	
 }
 
 //-----------------------------------------------------------------------------
@@ -99,8 +104,7 @@ static int init_fb()
 		perror("Error: failed to map framebuffer device to memory");
 		return 4;
 	}
-
-	printf("The framebuffer device was mapped to memory successfully.\n");
+	
 	return ret;
 }
 
@@ -113,12 +117,15 @@ static void draw_fb()
 {
 	uint32_t x = 0, y = 0;
 	uint32_t offset = 0;
-	for (y = 0; y < g.screen.yres; y++) {
-		for (x = 0; x < g.screen.xres; x++) {
-
+	uint32_t w = g.screen.xres;
+	uint32_t h = g.screen.yres;
+	for(y = 0; y < h; y++) {
+		for(x = 0; x < w; x++) {
+			g.scan.x = x;
+			g.scan.y = y;
 			offset = (x + g.screen.xoffset) * (g.screen.bits_per_pixel / 8) + (y + g.screen.yoffset) * g.screen.line_length;
-			draw(g.screen.fbp + offset, x, y);
-
+			g.scan.pp = g.screen.fbp + offset;
+			draw();
 		}
 	}
 }
