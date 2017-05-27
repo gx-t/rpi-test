@@ -11,7 +11,11 @@ static void ctrl_c(int sig) {
 }
 
 int main(int argc, char* argv[]) {
-	int8_t event[3];
+	struct {
+		uint8_t btn;
+		int8_t dx;
+		int8_t dy;
+	} evt;
 
 	fd = open("/dev/input/mouse0", O_RDONLY);
 	if(fd < 0) {
@@ -21,9 +25,9 @@ int main(int argc, char* argv[]) {
 
 	signal(SIGINT, ctrl_c);
 
-	while(sizeof(event) == read(fd, event, sizeof(event))) {
+	while(sizeof(evt) == read(fd, &evt, sizeof(evt))) {
 		printf("MOUSE: dx=%d, dy=%d, l=%d, m=%d, r=%d\n",
-				event[1], event[2], !!(event[0] & 1), !!(event[0] & 4), !!(event[0] & 2));
+				evt.dx, evt.dy, !!(evt.btn & 1), !!(evt.btn & 4), !!(evt.btn & 2));
 	}
 
 	close(fd);
