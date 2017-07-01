@@ -20,31 +20,34 @@ static void ctrl_c(int sig)
 
 int main()
 {
-	float s = 0, c = 0.75, f0 = FREQ_F32(155.0), f1 = FREQ_F32(7100.0), buff[BLOCK_SIZE];
+	float s = 0, c = 0, f = FREQ_F32(1000.0), buff[BLOCK_SIZE], q = 100.0;
 
-	float f = f0;
-	fprintf(stderr, "\nF0=%g\n", f * SAMP_RATE / 2 / PI);
 	signal(SIGINT, ctrl_c);
 	
-	while(running && f < f1) {
-		int i = BLOCK_SIZE;
-		float *pp = buff;
-		float amp = 0;
-
-		while(i--) {
-			c += s * f;
-			s -= c * f;
-			*pp ++ = s;
-			f *= 1.000001;
-			amp += s * s + c * c;
-		}
-		
-		if(sizeof(buff) != write(1, buff, sizeof(buff))) {
+	while(running) {
+		if(sizeof(buff) != read(0, buff, sizeof(buff))) {
 			perror("write");
 			return 1;
 		}
+		int i = BLOCK_SIZE;
+		float amp = 0;
+		float *pp = buff;
+
+		while(i--) {
+			s += (*pp - s) / q;
+			c += s * f;
+			s -= c * f;
+			*pp ++ = s;
+			amp += s * s + c * c;
+		}
+		fprintf(stderr, "\tAMP=%g\r", sqrt(amp / BLOCK_SIZE));
+		
+		
+		if(sizeof(buff) != write(1, buff, sizeof(buff))) {
+			perror("write");
+			return 2;
+		}
 	}
-	fprintf(stderr, "\nF1=%g\n", f * SAMP_RATE / 2 / PI);
 	return 0;
 }
 
