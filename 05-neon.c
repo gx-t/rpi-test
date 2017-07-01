@@ -31,7 +31,10 @@ int main() {
 				(*pp)[0] = (*pp)[1] = (s[0] + s[1] + s[2] + s[3])/4;
 				pp ++;
 			}
-			write(1, buff, sizeof(buff));
+			if(sizeof(buff) != write(1, buff, sizeof(buff))) {
+				perror("write");
+				return 1;
+			}
 		}
 	}
     return 0;

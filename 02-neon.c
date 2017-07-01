@@ -58,7 +58,10 @@ int main(int argc, char *argv[]) {
 
 			*p ++ = s;
 		}
-		write(STDOUT_FILENO, buff, sizeof(buff));
+		if(sizeof(buff) != write(STDOUT_FILENO, buff, sizeof(buff))) {
+			perror("write");
+			return 1;
+		}
 	}
 	return 0;
 }

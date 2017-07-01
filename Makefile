@@ -2,9 +2,9 @@
 
 CC=gcc
 
-deb: 00-deb 01-deb 02-deb 03-deb 04-deb 05-deb 06-deb
+deb: 00-deb 01-deb 02-deb 03-deb 04-deb 05-deb 06-deb 07-deb
 
-rel: 00-rel 01-rel 02-rel 03-rel 04-rel 05-rel 06-rel
+rel: 00-rel 01-rel 02-rel 03-rel 04-rel 05-rel 06-rel 07-rel
 
 00-deb:
 	$(CC) -Wall -g -o 00-mouse 00-mouse.c
@@ -47,8 +47,14 @@ rel: 00-rel 01-rel 02-rel 03-rel 04-rel 05-rel 06-rel
 	$(CC) -Wall -O2 -s -mcpu=cortex-a53 -mfpu=neon -mtune=cortex-a53 -o 06-fb 06-fb.c
 
 
+07-deb:
+	$(CC) -Wall -g -mcpu=cortex-a53 -mfpu=neon -mtune=cortex-a53 -o 07-chirp 07-chirp.c -lm
+07-rel:
+	$(CC) -Wall -O2 -s -mcpu=cortex-a53 -mfpu=neon -mtune=cortex-a53 -o 07-chirp 07-chirp.c -lm
+
+
 clean:
-	rm -rf 00-mouse 01-keyboard 02-neon 03-camera 04-stream 05-neon 06-fb rm *.s
+	rm -rf 00-mouse 01-keyboard 02-neon 03-camera 04-stream 05-neon 06-fb 07-chirp rm *.s
 
 ctags:
 	ctags -R . /usr/include/ /opt/vc/include/
