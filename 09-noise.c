@@ -1,4 +1,4 @@
-// ./07-chirp | ./08-resonance | play -r 48k -t f32 -c 1 -q -
+// ./09-noise | ./08-resonance | play -r 48k -t f32 -c 1 -
 
 #include <stdio.h>
 #include <unistd.h>
@@ -21,7 +21,7 @@ static void fill_buff(float buff[BLOCK_SIZE])
 	float* pp = buff;
 	int count = BLOCK_SIZE;
 	while(running && count --)
-		*pp ++ = (drand48() * 10.0 - 5.0);
+		*pp ++ = (drand48() * 2.0 - 1.0);
 }
 
 int main()

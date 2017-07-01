@@ -38,11 +38,8 @@ int main()
 			f *= 1.000001;
 			amp += s * s + c * c;
 		}
-		
-		if(sizeof(buff) != write(1, buff, sizeof(buff))) {
-			perror("write");
-			return 1;
-		}
+		if(sizeof(buff) != write(1, buff, sizeof(buff)))
+			break;
 	}
 	fprintf(stderr, "\nF1=%g\n", f * SAMP_RATE / 2 / PI);
 	return 0;

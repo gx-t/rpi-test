@@ -6,9 +6,9 @@ REL=-O2 -s
 VCLIB=/opt/vc/lib/
 VCINC=/opt/vc/include/
 
-deb: 00-deb 01-deb 02-deb 03-deb 04-deb 05-deb 06-deb 07-deb 08-deb 09-deb
+deb: 00-deb 01-deb 02-deb 03-deb 04-deb 05-deb 06-deb 07-deb 08-deb 09-deb 10-deb
 
-rel: 00-rel 01-rel 02-rel 03-rel 04-rel 05-rel 06-rel 07-rel 08-rel 09-rel
+rel: 00-rel 01-rel 02-rel 03-rel 04-rel 05-rel 06-rel 07-rel 08-rel 09-rel 10-rel
 
 00-deb:
 	$(CC) -Wall $(DEB) -o 00-mouse 00-mouse.c
@@ -64,6 +64,11 @@ rel: 00-rel 01-rel 02-rel 03-rel 04-rel 05-rel 06-rel 07-rel 08-rel 09-rel
 	$(CC) -Wall -g -mcpu=cortex-a53 -mfpu=neon -mtune=cortex-a53 -o 09-noise 09-noise.c -lm
 09-rel:
 	$(CC) -Wall -O2 -s -mcpu=cortex-a53 -mfpu=neon -mtune=cortex-a53 -o 09-noise 09-noise.c -lm
+
+10-deb:
+	$(CC) -Wall -g -mcpu=cortex-a53 -mfpu=neon -mtune=cortex-a53 -o 10-resonance 10-resonance.c -lm
+10-rel:
+	$(CC) -Wall -O2 -s -mcpu=cortex-a53 -mfpu=neon -mtune=cortex-a53 -o 10-resonance 10-resonance.c -lm
 
 
 clean:
