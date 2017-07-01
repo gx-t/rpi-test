@@ -24,7 +24,7 @@ int main()
 	, c[3] = {0, 0, 0}
 	, f[3] = {FREQ_F32(760.0), FREQ_F32(1320.0), FREQ_F32(2500.0)}
 	, buff[BLOCK_SIZE]
-	, q = 200.0;
+	, q = 300.0;
 
 	signal(SIGINT, ctrl_c);
 	
