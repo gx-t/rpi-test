@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <signal.h>
-#include <math.h>
 
 #define PI				3.14159265358979323846
 #define SAMP_RATE		48000 //Fs = 48KHZ
