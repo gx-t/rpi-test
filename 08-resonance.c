@@ -25,11 +25,11 @@ int main()
 	signal(SIGINT, ctrl_c);
 	
 	while(running) {
-		if(sizeof(buff) != read(0, buff, sizeof(buff))) {
-			perror("write");
-			return 1;
-		}
-		int i = BLOCK_SIZE;
+		int num_bytes = read(0, buff, sizeof(buff));
+		if(0 > num_bytes || num_bytes % sizeof(float))
+			break;
+
+		int i = num_bytes / sizeof(float);
 		float amp = 0;
 		float *pp = buff;
 
@@ -43,10 +43,8 @@ int main()
 		fprintf(stderr, "\tAMP=%g\r", sqrt(amp / BLOCK_SIZE));
 		
 		
-		if(sizeof(buff) != write(1, buff, sizeof(buff))) {
-			perror("write");
-			return 2;
-		}
+		if(num_bytes != write(1, buff, num_bytes))
+			break;
 	}
 	return 0;
 }

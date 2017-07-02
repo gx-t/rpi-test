@@ -32,10 +32,11 @@ int main()
 
 	while(running) {
 		while(running && f < f1) {
-			if(sizeof(buff) != read(0, buff, sizeof(buff)))
+			int num_bytes = read(0, buff, sizeof(buff));
+			if(0 > num_bytes || num_bytes % sizeof(float))
 				break;
 
-			int i = BLOCK_SIZE;
+			int i = num_bytes / sizeof(float);
 			float *pp = buff;
 
 			while(i--) {
@@ -48,16 +49,17 @@ int main()
 				f *= 1.00001;
 			}
 
-			if(sizeof(buff) != write(1, buff, sizeof(buff)))
+			if(num_bytes != write(1, buff, num_bytes))
 				break;
 		}
 
 
 		while(running && f > f0) {
-			if(sizeof(buff) != read(0, buff, sizeof(buff)))
+			int num_bytes = read(0, buff, sizeof(buff));
+			if(0 > num_bytes)
 				break;
 
-			int i = BLOCK_SIZE;
+			int i = num_bytes / sizeof(float);
 			float *pp = buff;
 
 			while(i--) {
@@ -70,7 +72,7 @@ int main()
 				f /= 1.00001;
 			}
 
-			if(sizeof(buff) != write(1, buff, sizeof(buff)))
+			if(num_bytes != write(1, buff, num_bytes))
 				break;
 		}
 	}
