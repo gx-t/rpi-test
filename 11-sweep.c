@@ -1,4 +1,5 @@
 // ./09-noise | ./11-sweep | play -r 48k -t f32 -c 1 -
+// rec -r 48k -t f32 -c 1 -q - gain +6 | ./11-sweep | play -r 48k -t f32 -c 1 -q -
 
 #include <stdio.h>
 #include <unistd.h>

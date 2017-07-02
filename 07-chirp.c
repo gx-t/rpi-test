@@ -28,15 +28,14 @@ int main()
 	while(running && f < f1) {
 		int i = BLOCK_SIZE;
 		float *pp = buff;
-		float amp = 0;
 
 		while(i--) {
 			c += s * f;
 			s -= c * f;
 			*pp ++ = s;
 			f *= 1.000001;
-			amp += s * s + c * c;
 		}
+		fprintf(stderr, "F=%g\r", f * SAMP_RATE / 2 / PI);
 		if(sizeof(buff) != write(1, buff, sizeof(buff)))
 			break;
 	}
