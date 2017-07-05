@@ -18,7 +18,7 @@ struct {
 			, yoffset
 			, line_length
 			, size;
-
+		int32_t fd;
 		uint8_t* fbp;
 	} screen;
 
@@ -33,7 +33,7 @@ struct {
 				, height;
 			int32_t x;
 		} pad;
-	
+
 		struct {
 			uint32_t rad
 				, cx
@@ -44,7 +44,7 @@ struct {
 
 			void (*update_pos)();
 		} ball;
-	
+
 		struct {
 			uint32_t bground
 				, border
@@ -89,7 +89,7 @@ static void draw_pad()
 		return;
 	if(y > g.board.height - 2)
 		return;
-	
+
 	x -= g.board.pad.x;
 
 	if(0 > x)
@@ -100,15 +100,31 @@ static void draw_pad()
 	*(uint32_t*)g.scan.pp = g.board.color.pad;
 }
 
+static void process_ball_collision(int32_t cx, int32_t cy)
+{
+	uint32_t rr = g.board.ball.rad;
+	rr *= rr;
+	rr /= 3;
+	if(cy * cy > rr) {
+		g.board.ball.vy = -g.board.ball.vy;
+		return;
+	}
+	if(cx * cx > rr) {
+		g.board.ball.vx = -g.board.ball.vx;
+		return;
+	}
+}
+
 static void draw_ball()
 {
 	int32_t cx = (int32_t)g.scan.x - (int32_t)g.board.ball.cx
 		, cy = (int32_t)g.scan.y - (int32_t)g.board.ball.cy
 		, r = g.board.ball.rad;
 
-//	if(*(uint32_t*)g.scan.pp != g.color.bground) {
-//	}
 	if(cx * cx + cy * cy < r * r) {
+		if(*(uint32_t*)g.scan.pp != g.board.color.bground)
+			process_ball_collision(cx, cy);
+
 		*(uint32_t*)g.scan.pp = g.board.color.ball;
 	}
 }
@@ -117,29 +133,13 @@ static void update_ball_kept()
 {
 	uint32_t cx = g.board.pad.x + g.board.pad.width / 2
 		, cy = g.board.height - g.board.pad.height - g.board.ball.rad;
-	
+
 	g.board.ball.cx = cx;
 	g.board.ball.cy = cy;
 }
 
 static void update_ball_moving()
 {
-//	int32_t x = g.board.ball.cx;
-//	int32_t y = g.board.ball.cy;
-//	uint32_t r = g.board.ball.rad;
-
-//	x += g.board.ball.vx;
-//	y += g.board.ball.vy;
-
-//	if(x - r < 2 && x + r > g.board.width - 2)
-//		g.board.ball.vx = -g.board.ball.vx;
-//
-//	if(y - r < 2 && y + r > g.board.height - 2)
-//		g.board.ball.vy = -g.board.ball.vy;
-
-//	if(x - (int32_t)r < 1)
-//		g.board.ball.vx = -g.board.ball.vx;
-
 	g.board.ball.cx += g.board.ball.vx;
 	g.board.ball.cy += g.board.ball.vy;
 }
@@ -159,48 +159,50 @@ static int init_fb()
 	struct fb_var_screeninfo vinfo;
 	struct fb_fix_screeninfo finfo;
 
+	g.screen.fd = -1;
+
 	int fd = open("/dev/fb0", O_RDWR);
 	if (fd == -1) {
 		perror("Error: cannot open framebuffer device");
 		return 1;
 	}
 
-	do {
-		if (ioctl(fd, FBIOGET_FSCREENINFO, &finfo) == -1) {
-			perror("Error reading fixed information");
-			ret = 2;
-			break;
-		}
+	if (ioctl(fd, FBIOGET_FSCREENINFO, &finfo) == -1) {
+		close(fd);
+		perror("Error reading fixed information");
+		return 2;
+	}
 
-		if (ioctl(fd, FBIOGET_VSCREENINFO, &vinfo) == -1) {
-			perror("Error reading variable information");
-			ret = 3;
-			break;
-		}
-		g.screen.xres = vinfo.xres;
-		g.screen.yres = vinfo.yres;
-		g.screen.bits_per_pixel = vinfo.bits_per_pixel;
-		g.screen.line_length = finfo.line_length;
+	if (ioctl(fd, FBIOGET_VSCREENINFO, &vinfo) == -1) {
+		close(fd);
+		perror("Error reading variable information");
+		return 3;
+	}
+	g.screen.xres = vinfo.xres;
+	g.screen.yres = vinfo.yres;
+	g.screen.bits_per_pixel = vinfo.bits_per_pixel;
+	g.screen.line_length = finfo.line_length;
 
-		printf("%dx%d, %dbpp\n", g.screen.xres, g.screen.yres, g.screen.bits_per_pixel);
+	printf("%dx%d, %dbpp\n", g.screen.xres, g.screen.yres, g.screen.bits_per_pixel);
 
-		g.screen.size = g.screen.xres * g.screen.yres * g.screen.bits_per_pixel / 8;
+	g.screen.size = g.screen.xres * g.screen.yres * g.screen.bits_per_pixel / 8;
 
-		g.screen.fbp = (unsigned char *)mmap(0, g.screen.size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-	} while(0);
+	g.screen.fbp = (unsigned char *)mmap(0, g.screen.size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 
-	close(fd);
 
 	if ((int)g.screen.fbp == -1) {
+		close(fd);
 		perror("Error: failed to map framebuffer device to memory");
 		return 4;
 	}
-	
+
+	g.screen.fd = fd;
 	return ret;
 }
 
 static void free_fb()
 {
+	close(g.screen.fd);
 	munmap(g.screen.fbp, g.screen.size);
 }
 
@@ -311,13 +313,14 @@ int main()
 		free_fb();
 		return ret;
 	}
-	
+
 	init_board();
 
 	while(g.running) {
 		read_mouse();
 		update_board();
 		scan_write_fb();
+		ioctl(g.screen.fd, FBIO_WAITFORVSYNC, 0);
 	}
 
 	free_mouse();
