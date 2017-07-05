@@ -23,16 +23,11 @@ struct {
 	} screen;
 
 	struct {
-		uint32_t left
+		uint32_t gs
+			, left
 			, top
 			, width
 			, height;
-
-		struct {
-			uint32_t width
-				, height;
-			int32_t x;
-		} pad;
 
 		struct {
 			uint32_t rad
@@ -42,13 +37,17 @@ struct {
 			int32_t vx
 				, vy;
 
-			void (*update_pos)();
 		} ball;
+
+		struct {
+			int32_t x0, x1, x2, x3;
+			int32_t l0, l1, l2, l3;
+			uint32_t c0, c1, c2, c3;
+		} wall;
 
 		struct {
 			uint32_t bground
 				, border
-				, pad
 				, ball;
 		} color;
 	} board;
@@ -60,12 +59,7 @@ struct {
 		uint8_t* pp;
 	} scan;
 
-	struct {
-		int fd;
-		int8_t dx;
-	}mouse;
-
-	int32_t running;
+	volatile int32_t running;
 }static g;
 
 static void draw_borders()
@@ -78,26 +72,6 @@ static void draw_borders()
 	if(0 == x || r == x || 0 == y || b == y) {
 		*(uint32_t*)g.scan.pp = g.board.color.border;
 	}
-}
-
-static void draw_pad()
-{
-	int32_t x = (int32_t)g.scan.x
-		, y = g.scan.y;
-
-	if(y < g.board.height - g.board.pad.height)
-		return;
-	if(y > g.board.height - 2)
-		return;
-
-	x -= g.board.pad.x;
-
-	if(0 > x)
-		return;
-	if(g.board.pad.width < x)
-		return;
-
-	*(uint32_t*)g.scan.pp = g.board.color.pad;
 }
 
 static void process_ball_collision(int32_t cx, int32_t cy)
@@ -115,6 +89,29 @@ static void process_ball_collision(int32_t cx, int32_t cy)
 	}
 }
 
+static void draw_line(int32_t x, int32_t y, int32_t len, uint32_t color)
+{
+	if(y != g.scan.y) 
+		return;
+	if(g.scan.x < x || g.scan.x > x + len)
+		return;
+
+	*(uint32_t*)g.scan.pp = color;
+}
+
+static void draw_walls()
+{
+	int32_t sy = 4 * g.board.gs;
+	int32_t y = sy;
+	draw_line(g.board.wall.x0, y, g.board.wall.l0, 0x00FF0000);
+	y += sy;
+	draw_line(g.board.wall.x1, y, g.board.wall.l1, 0x0000FF00);
+	y += sy;
+	draw_line(g.board.wall.x2, y, g.board.wall.l2, 0x000000FF);
+	y += sy;
+	draw_line(g.board.wall.x3, y, g.board.wall.l3, 0x0000FFFF);
+}
+
 static void draw_ball()
 {
 	int32_t cx = (int32_t)g.scan.x - (int32_t)g.board.ball.cx
@@ -129,15 +126,6 @@ static void draw_ball()
 	}
 }
 
-static void update_ball_kept()
-{
-	uint32_t cx = g.board.pad.x + g.board.pad.width / 2
-		, cy = g.board.height - g.board.pad.height - g.board.ball.rad;
-
-	g.board.ball.cx = cx;
-	g.board.ball.cy = cy;
-}
-
 static void update_ball_moving()
 {
 	g.board.ball.cx += g.board.ball.vx;
@@ -147,7 +135,7 @@ static void update_ball_moving()
 static void draw() {
 	*(uint32_t*)g.scan.pp = g.board.color.bground;
 	draw_borders();
-	draw_pad();
+	draw_walls();
 	draw_ball();
 }
 
@@ -208,72 +196,52 @@ static void free_fb()
 
 //-----------------------------------------------------------------------------
 
-static void init_board()
+static void init_ball()
 {
-	g.board.left = 300;
-	g.board.top = 300;
-	g.board.width = 300;
-	g.board.height = 200;
-
-	g.board.pad.width = g.board.width / 3;
-	g.board.pad.height = g.board.height / 10;
-	g.board.pad.x = g.board.width / 2 - g.board.pad.width;
-
-	g.board.ball.rad = 10;
+	g.board.ball.rad = g.board.gs;
 	g.board.ball.cx = g.board.width / 2;
 	g.board.ball.cy = g.board.height / 2;
-	g.board.ball.vx = 0;
-	g.board.ball.vy = 0;
-	g.board.ball.update_pos = update_ball_kept;
+	g.board.ball.vx = -2;
+	g.board.ball.vy = -3;
+}
 
-	g.board.color.bground = 0x00000000;
-	g.board.color.border = 0x00FF8888;
-	g.board.color.pad = 0x00FFFF00;
-	g.board.color.ball = 0x00FF0000;
+static void init_color()
+{
+	g.board.color.bground	= 0x00000000;
+	g.board.color.border	= 0x00FF8888;
+	g.board.color.ball		= 0x00FF0000;
+}
 
+static void init_wall()
+{
 	srand(time(0));
-	g.board.pad.x = 0;// 2 + rand() % (g.board.width - g.board.pad.width - 4);
+	g.board.wall.x0 = rand() % (20 * g.board.gs);
+	g.board.wall.x1 = rand() % (20 * g.board.gs);
+	g.board.wall.x2 = rand() % (20 * g.board.gs);
+	g.board.wall.x3 = rand() % (20 * g.board.gs);
+	
+	g.board.wall.l0 = rand() % (20 * g.board.gs) + 5 * g.board.gs;
+	g.board.wall.l1 = rand() % (20 * g.board.gs) + 5 * g.board.gs;
+	g.board.wall.l2 = rand() % (20 * g.board.gs) + 5 * g.board.gs;
+	g.board.wall.l3 = rand() % (20 * g.board.gs) + 5 * g.board.gs;
+}
+
+static void init_board()
+{
+	g.board.gs		= 10;
+	g.board.left	= 30 * g.board.gs;
+	g.board.top		= 30 * g.board.gs;
+	g.board.width	= 30 * g.board.gs;
+	g.board.height	= 20 * g.board.gs;
+
+	init_ball();
+	init_color();
+	init_wall();
 }
 
 static void update_board()
 {
-	g.board.pad.x += g.mouse.dx;
-	g.mouse.dx = 0;
-
-	g.board.ball.update_pos();
-}
-
-static int init_mouse()
-{
-	g.mouse.dx = 0;
-	g.mouse.fd = open("/dev/input/mouse0", O_RDONLY | O_NONBLOCK);
-	if(g.mouse.fd < 0) {
-		perror("mouse");
-		return 5;
-	}
-	return 0;
-}
-
-static void free_mouse()
-{
-	close(g.mouse.fd);
-}
-
-static void read_mouse()
-{
-	struct {
-		uint8_t btn;
-		int8_t dx;
-		int8_t dy;
-	} evt;
-	if(sizeof(evt) != read(g.mouse.fd, &evt, sizeof(evt)))
-		return;
-	g.mouse.dx = evt.dx;
-	if(evt.btn & 1) {
-		g.board.ball.vx = -2;
-		g.board.ball.vy = -3;
-		g.board.ball.update_pos = update_ball_moving;
-	}
+	update_ball_moving();
 }
 
 static void scan_write_fb()
@@ -298,6 +266,7 @@ static void scan_write_fb()
 static void ctrl_c(int sig) {
 	signal(SIGINT, ctrl_c);
 	g.running = 0;
+	printf("CTRL+C %d\n", g.running);
 }
 
 int main()
@@ -309,21 +278,19 @@ int main()
 
 	if((ret = init_fb()))
 		return ret;
-	if((ret = init_mouse())) {
-		free_fb();
-		return ret;
-	}
 
 	init_board();
 
 	while(g.running) {
-		read_mouse();
-		update_board();
-		scan_write_fb();
-		ioctl(g.screen.fd, FBIO_WAITFORVSYNC, 0);
+		uint32_t count = 300;
+		while(g.running && count --) {
+			update_board();
+			scan_write_fb();
+			ioctl(g.screen.fd, FBIO_WAITFORVSYNC, 0);
+		}
+		init_wall();
 	}
 
-	free_mouse();
 	free_fb();
 	return ret;
 }
