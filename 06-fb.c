@@ -76,16 +76,10 @@ static void draw_borders()
 
 static void process_ball_collision(int32_t cx, int32_t cy)
 {
-	uint32_t rr = g.board.ball.rad;
-	rr *= rr;
-	rr /= 3;
-	if(cy * cy > rr) {
+	if(0 == cx) {
 		g.board.ball.vy = -g.board.ball.vy;
-		return;
-	}
-	if(cx * cx > rr) {
+	} else if(0 == cy) {
 		g.board.ball.vx = -g.board.ball.vx;
-		return;
 	}
 }
 
