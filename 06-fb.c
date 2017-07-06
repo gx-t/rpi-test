@@ -41,7 +41,7 @@ struct {
 
 		struct {
 			int32_t x0, x1, x2, x3;
-			int32_t l0, l1, l2, l3;
+			int32_t length;
 			uint32_t c0, c1, c2, c3;
 		} wall;
 
@@ -97,13 +97,13 @@ static void draw_walls()
 {
 	int32_t sy = 4 * g.board.gs;
 	int32_t y = sy;
-	draw_line(g.board.wall.x0, y, g.board.wall.l0, 0x00FF0000);
+	draw_line(g.board.wall.x0, y, g.board.wall.length, 0x00FF0000);
 	y += sy;
-	draw_line(g.board.wall.x1, y, g.board.wall.l1, 0x0000FF00);
+	draw_line(g.board.wall.x1, y, g.board.wall.length, 0x0000FF00);
 	y += sy;
-	draw_line(g.board.wall.x2, y, g.board.wall.l2, 0x000000FF);
+	draw_line(g.board.wall.x2, y, g.board.wall.length, 0x000000FF);
 	y += sy;
-	draw_line(g.board.wall.x3, y, g.board.wall.l3, 0x0000FFFF);
+	draw_line(g.board.wall.x3, y, g.board.wall.length, 0x0000FFFF);
 }
 
 static void draw_ball()
@@ -209,15 +209,12 @@ static void init_color()
 static void init_wall()
 {
 	srand(time(0));
-	g.board.wall.x0 = rand() % (20 * g.board.gs);
-	g.board.wall.x1 = rand() % (20 * g.board.gs);
-	g.board.wall.x2 = rand() % (20 * g.board.gs);
-	g.board.wall.x3 = rand() % (20 * g.board.gs);
+	g.board.wall.x0 = 1 + rand() % (20 * g.board.gs - 2);
+	g.board.wall.x1 = 1 + rand() % (20 * g.board.gs - 2);
+	g.board.wall.x2 = 1 + rand() % (20 * g.board.gs - 2);
+	g.board.wall.x3 = 1 + rand() % (20 * g.board.gs - 2);
 	
-	g.board.wall.l0 = rand() % (20 * g.board.gs) + 5 * g.board.gs;
-	g.board.wall.l1 = rand() % (20 * g.board.gs) + 5 * g.board.gs;
-	g.board.wall.l2 = rand() % (20 * g.board.gs) + 5 * g.board.gs;
-	g.board.wall.l3 = rand() % (20 * g.board.gs) + 5 * g.board.gs;
+	g.board.wall.length = 10 * g.board.gs;
 }
 
 static void init_board()
