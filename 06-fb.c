@@ -33,16 +33,20 @@ struct {
 			uint32_t rad
 				, cx
 				, cy;
-
 			int32_t vx
 				, vy;
-
 		} ball;
 
 		struct {
-			int32_t x0, x1, x2, x3;
+			int32_t x0
+			, x1
+			, x2
+			, x3;
 			int32_t length;
-			uint32_t c0, c1, c2, c3;
+			uint32_t c0
+			, c1
+			, c2
+			, c3;
 		} wall;
 
 		struct {
@@ -55,7 +59,6 @@ struct {
 	struct {
 		uint32_t x
 			, y;
-
 		uint8_t* pp;
 	} scan;
 
