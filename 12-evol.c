@@ -2,72 +2,46 @@
 #include <stdlib.h>
 #include <time.h>
 
-#define POP_COUNT		1024
-#define MIN_VAL			-1000.0
-#define MAX_VAL			1000.0
-
-struct INHABIT {
-	float val;
-	float rfitness;
-} pop[POP_COUNT];
-
-static void fill()
+static void evol_quad_eq(float a, float b, float c, unsigned gen_count, unsigned pop_count, float min, float max, float mut)
 {
-	struct INHABIT* pp = pop;
-	int count = POP_COUNT;
+	int cmp_proc(const void* x1, const void* x2) {
+		float v1 = a * *(float*)x1 * *(float*)x1 + b * *(float*)x1 + c;
+		float v2 = a * *(float*)x2 * *(float*)x2 + b * *(float*)x2 + c;
+		v1 *= v1;
+		v2 *= v2;
+		if(v1 > v2)
+			return 1;
+
+		if(v2 > v1)
+			return -1;
+
+		return 0;
+	}
+
+	float pop[pop_count * 2];
+	unsigned i;
+
 	srand48(time(0));
-	while(count --) {
-		pp->val = (MAX_VAL - MIN_VAL) * drand48() + MIN_VAL;
-		pp ++;
+	for(i = 0; i < pop_count; i ++) {
+		pop[i] = min + (max - min) * drand48();
 	}
-}
 
-static void crossover()
-{
-}
-
-static void mutate()
-{
-}
-
-static void fitness()
-{
-	static const float a = 2;
-	static const float b = 6;
-	static const float c = 3;
-
-	struct INHABIT* pp = pop;
-	int count = POP_COUNT;
-
-	while(count --) {
-		float x = pp->val;
-		float res = a * x * x + b * x + c;
-		pp->rfitness = (res * res);
-		pp ++;
+	while(gen_count --) {
+		for(i = 0; i < pop_count; i ++) {
+			pop[i + pop_count] = pop[i] - mut + mut * 2.0 * drand48();
+		}
+		qsort(pop, pop_count * 2, sizeof(pop[0]), cmp_proc);
 	}
-}
 
-static void sort()
-{
-}
-
-static void print()
-{
+	for(i = 0; i < pop_count; i ++) {
+		printf("%g ", pop[i]);
+	}
+	printf("\n");
 }
 
 int main()
 {
-	int gen_count = 100;
-
-	fill();
-
-	while(gen_count --) {
-		crossover();
-		mutate();
-		fitness();
-		sort();
-	}
-	print();
+	evol_quad_eq(2, -4, -2, 256, 256, -100.0, 100.0, 1.0);
 	return 0;
 }
 
