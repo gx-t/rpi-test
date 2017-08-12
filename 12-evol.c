@@ -45,7 +45,7 @@ static void evol_quad_eq(float a, float b, float c, unsigned gen_count, unsigned
 		for(i = 0; i < pop_count; i ++) {
 			printf("%g ", pop[i]);
 		}
-		printf("\n");
+		printf("\n----------------------------\n");
 	}
 
 	void sort_select()
@@ -58,12 +58,17 @@ static void evol_quad_eq(float a, float b, float c, unsigned gen_count, unsigned
 
 	srand48(time(0));
 
+	struct timespec t1, t2;
+	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &t1);
+	
 	while(gen_count --) {
 		reproduce_mutate();
 		sort_select();
 	}
 
+	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &t2);
 	print();
+	fprintf(stderr, "CPU TIME: %g us\n", ((double)t2.tv_nsec - (double)t1.tv_nsec) / 1000);
 }
 
 static int cmd_evol_quad_eq(int argc, char* argv[]) {
