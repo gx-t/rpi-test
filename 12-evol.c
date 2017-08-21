@@ -17,6 +17,7 @@ static void evol_quad_eq(struct ABC* abc, unsigned gen_count, unsigned pop_count
 	register float b = abc->b;
 	register float c = abc->c;
 	struct XF pop[pop_count * 2];
+	struct XF* index[pop_count * 2];
 
 	void set_calc_val(struct XF* xf, float x)
 	{
@@ -27,8 +28,8 @@ static void evol_quad_eq(struct ABC* abc, unsigned gen_count, unsigned pop_count
 	
 	int select_proc(const void* p1, const void* p2)
 	{
-		register const struct XF* xf1 = (const struct XF*)p1;
-		register const struct XF* xf2 = (const struct XF*)p2;
+		register const struct XF* xf1 = *(const struct XF**)p1;
+		register const struct XF* xf2 = *(const struct XF**)p2;
 		if(xf1->val > xf2->val)
 			return 1;
 
@@ -44,7 +45,11 @@ static void evol_quad_eq(struct ABC* abc, unsigned gen_count, unsigned pop_count
 		float val = min;
 		unsigned i;
 		for(i = 0; i < pop_count; i ++, val += step) {
-			set_calc_val(&pop[i], val);
+			index[i] = &pop[i];
+			set_calc_val(index[i], val);
+		}
+		for(i = pop_count; i < 2 * pop_count; i ++) {
+			index[i] = &pop[i];
 		}
 	}
 
@@ -52,20 +57,20 @@ static void evol_quad_eq(struct ABC* abc, unsigned gen_count, unsigned pop_count
 	{
 		unsigned i;
 		for(i = 0; i < pop_count; i ++)
-			set_calc_val(pop + i + pop_count, pop[i].x - mut + mut * 2.0 * drand48());
+			set_calc_val(index[i + pop_count], index[i]->x - mut + mut * 2.0 * drand48());
 	}
 
 	void print() {
 		unsigned i;
 		for(i = 0; i < pop_count; i ++) {
-			printf("%g -- %g ", pop[i].x, pop[i].val);
+			printf("%g -- %g ", index[i]->x, index[i]->val);
 		}
 		printf("\n----------------------------\n");
 	}
 
 	void sort_select()
 	{
-		qsort(pop, pop_count * 2, sizeof(pop[0]), select_proc);
+		qsort(index, pop_count * 2, sizeof(index[0]), select_proc);
 	}
 
 
