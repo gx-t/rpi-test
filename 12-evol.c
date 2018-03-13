@@ -3,92 +3,92 @@
 #include <time.h>
 #include <string.h>
 
+#define MUTATION_DECREASE_FACTOR    1.05
+
+/*
+time ./12-evol evol-quad-eq 2 -4 -2 100000 256 -100.0 100.0 1.0
+real    0m20.554s
+user    0m20.539s
+sys 0m0.012s
+*/
+
 struct XF {
-	float x, val;
+	float x, fit;
 };
 
 struct ABC {
 	float a, b, c;
 };
 
+static void quad_eq_calc_fitness(struct XF* xf, const struct ABC* abc, float x)
+{
+    float v = abc->a * x * x + abc->b * x + abc->c;
+    xf->fit = v * v;
+    xf->x = x;
+}
+
+static int quad_eq_fitness_sort_proc(const struct XF** xf1, const struct XF** xf2)
+{
+    if((*xf1)->fit > (*xf2)->fit)
+        return 1;
+
+    if((*xf1)->fit < (*xf2)->fit)
+        return -1;
+
+    return 0;
+}
+
+static void quad_eq_calc_and_fill_fitness(struct XF* xf, struct XF** idx, const struct ABC* abc, unsigned count, float min, float max)
+{
+    float step = (max - min) / count;
+    float val = min;
+    unsigned i;
+
+    for(i = 0; i < count; i ++, val += step) {
+        idx[i] = &xf[i];
+        quad_eq_calc_fitness(idx[i], abc, val);
+    }
+
+    for(i = count; i < 2 * count; i ++) {
+        idx[i] = &xf[i];
+    }
+}
+
+static void quad_eq_reproduce_and_mutate_x(struct XF** idx, const struct ABC* abc, unsigned count, float mut)
+{
+    unsigned i;
+    for(i = 0; i < count; i ++)
+        quad_eq_calc_fitness(idx[i + count], abc, idx[i]->x - mut + mut * 2.0 * drand48());
+}
+
+static void quad_eq_print_x_fitness(struct XF* const * idx, unsigned count)
+{
+    printf("x                    fitness\n");
+    printf("----------------------------\n");
+    while(count --) {
+        printf("%-16g %11g\n", (*idx)->x, (*idx)->fit);
+        idx ++;
+    }
+    printf("----------------------------\n");
+}
+
 static void evol_quad_eq(struct ABC* abc, unsigned gen_count, unsigned pop_count, float min, float max, float mut)
 {
-	register float a = abc->a;
-	register float b = abc->b;
-	register float c = abc->c;
 	struct XF pop[pop_count * 2];
 	struct XF* index[pop_count * 2];
 
-	void set_calc_val(struct XF* xf, float x)
-	{
-		float v = a * x * x + b * x + c;
-		xf->val = v * v;
-		xf->x = x;
-	};
-	
-	int select_proc(const void* p1, const void* p2)
-	{
-		register const struct XF* xf1 = *(const struct XF**)p1;
-		register const struct XF* xf2 = *(const struct XF**)p2;
-		if(xf1->val > xf2->val)
-			return 1;
-
-		if(xf1->val < xf2->val)
-			return -1;
-
-		return 0;
-	}
-
-	void fill()
-	{
-		float step = (max - min) / pop_count;
-		float val = min;
-		unsigned i;
-		for(i = 0; i < pop_count; i ++, val += step) {
-			index[i] = &pop[i];
-			set_calc_val(index[i], val);
-		}
-		for(i = pop_count; i < 2 * pop_count; i ++) {
-			index[i] = &pop[i];
-		}
-	}
-
-	void reproduce_mutate()
-	{
-		unsigned i;
-		for(i = 0; i < pop_count; i ++)
-			set_calc_val(index[i + pop_count], index[i]->x - mut + mut * 2.0 * drand48());
-	}
-
-	void print() {
-		unsigned i;
-		for(i = 0; i < pop_count; i ++) {
-			printf("%g -- %g ", index[i]->x, index[i]->val);
-		}
-		printf("\n----------------------------\n");
-	}
-
-	void sort_select()
-	{
-		qsort(index, pop_count * 2, sizeof(index[0]), select_proc);
-	}
-
-
-	fill();
+    quad_eq_calc_and_fill_fitness(pop, index, abc, pop_count, min, max);
 
 	srand48(time(0));
 
-	struct timespec t1, t2;
-	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &t1);
-	
 	while(gen_count --) {
-		reproduce_mutate();
-		sort_select();
+        quad_eq_reproduce_and_mutate_x(index, abc, pop_count, mut);
+		qsort(index, pop_count * 2, sizeof(index[0]), (int (*)(const void*, const void*))quad_eq_fitness_sort_proc);
+        mut /= MUTATION_DECREASE_FACTOR;
 	}
 
-	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &t2);
-	print();
-	fprintf(stderr, "CPU TIME: %g us\n", ((double)t2.tv_nsec - (double)t1.tv_nsec) / 1000);
+	quad_eq_print_x_fitness(index, pop_count);
+    printf("Final mutation: %g\n", mut);
 }
 
 static void evol_quad_eq_reverse(float x, unsigned gen_count, unsigned pop_count, float min, float max, float mut)
