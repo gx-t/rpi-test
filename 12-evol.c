@@ -10,19 +10,25 @@ time ./12-evol evol-quad-eq 2 -4 -2 100000 256 -100.0 100.0 1.0
 real    0m20.554s
 user    0m20.539s
 sys 0m0.012s
+
+with adaptive mutation
+real    0m16.885s
+user    0m16.830s
+sys 0m0.031s
+
+many args instead of struct pointer
+real    0m16.662s
+user    0m16.649s
+sys 0m0.011s
 */
 
 struct XF {
 	float x, fit;
 };
 
-struct ABC {
-	float a, b, c;
-};
-
-static void quad_eq_calc_fitness(struct XF* xf, const struct ABC* abc, float x)
+static void quad_eq_calc_fitness(struct XF* xf, float a, float b, float c, float x)
 {
-    float v = abc->a * x * x + abc->b * x + abc->c;
+    float v = a * x * x + b * x + c;
     xf->fit = v * v;
     xf->x = x;
 }
@@ -38,7 +44,7 @@ static int quad_eq_fitness_sort_proc(const struct XF** xf1, const struct XF** xf
     return 0;
 }
 
-static void quad_eq_calc_and_fill_fitness(struct XF* xf, struct XF** idx, const struct ABC* abc, unsigned count, float min, float max)
+static void quad_eq_calc_and_fill_fitness(struct XF* xf, struct XF** idx, float a, float b, float c, unsigned count, float min, float max)
 {
     float step = (max - min) / count;
     float val = min;
@@ -46,7 +52,7 @@ static void quad_eq_calc_and_fill_fitness(struct XF* xf, struct XF** idx, const 
 
     for(i = 0; i < count; i ++, val += step) {
         idx[i] = &xf[i];
-        quad_eq_calc_fitness(idx[i], abc, val);
+        quad_eq_calc_fitness(idx[i], a, b, c, val);
     }
 
     for(i = count; i < 2 * count; i ++) {
@@ -54,11 +60,11 @@ static void quad_eq_calc_and_fill_fitness(struct XF* xf, struct XF** idx, const 
     }
 }
 
-static void quad_eq_reproduce_and_mutate_x(struct XF** idx, const struct ABC* abc, unsigned count, float mut)
+static void quad_eq_reproduce_and_mutate_x(struct XF** idx, float a, float b, float c, unsigned count, float mut)
 {
     unsigned i;
     for(i = 0; i < count; i ++)
-        quad_eq_calc_fitness(idx[i + count], abc, idx[i]->x - mut + mut * 2.0 * drand48());
+        quad_eq_calc_fitness(idx[i + count], a, b, c, idx[i]->x - mut + mut * 2.0 * drand48());
 }
 
 static void quad_eq_print_x_fitness(struct XF* const * idx, unsigned count)
@@ -72,17 +78,17 @@ static void quad_eq_print_x_fitness(struct XF* const * idx, unsigned count)
     printf("----------------------------\n");
 }
 
-static void evol_quad_eq(struct ABC* abc, unsigned gen_count, unsigned pop_count, float min, float max, float mut)
+static void evol_quad_eq(float a, float b, float c, unsigned gen_count, unsigned pop_count, float min, float max, float mut)
 {
 	struct XF pop[pop_count * 2];
 	struct XF* index[pop_count * 2];
 
-    quad_eq_calc_and_fill_fitness(pop, index, abc, pop_count, min, max);
+    quad_eq_calc_and_fill_fitness(pop, index, a, b, c, pop_count, min, max);
 
 	srand48(time(0));
 
 	while(gen_count --) {
-        quad_eq_reproduce_and_mutate_x(index, abc, pop_count, mut);
+        quad_eq_reproduce_and_mutate_x(index, a, b, c, pop_count, mut);
 		qsort(index, pop_count * 2, sizeof(index[0]), (int (*)(const void*, const void*))quad_eq_fitness_sort_proc);
         mut /= MUTATION_DECREASE_FACTOR;
 	}
@@ -93,7 +99,6 @@ static void evol_quad_eq(struct ABC* abc, unsigned gen_count, unsigned pop_count
 
 static void evol_quad_eq_reverse(float x, unsigned gen_count, unsigned pop_count, float min, float max, float mut)
 {
-	struct ABC pop[pop_count * 2];
 /*	
 	int select_proc(const void* x1, const void* x2)
 	{
@@ -169,12 +174,11 @@ static int cmd_evol_quad_eq(int argc, char* argv[]) {
 	argc --;
 	argv ++;
 
-	float min, max, mut;
-	struct ABC abc = {0};
+	float min, max, mut, a = 0, b = 0, c = 0;
 	unsigned gen_count, pop_count;
-	if(1 != sscanf(argv[0], "%g", &abc.a)
-	|| 1 != sscanf(argv[1], "%g", &abc.b)
-	|| 1 != sscanf(argv[2], "%g", &abc.c)
+	if(1 != sscanf(argv[0], "%g", &a)
+	|| 1 != sscanf(argv[1], "%g", &b)
+	|| 1 != sscanf(argv[2], "%g", &c)
 	|| 1 != sscanf(argv[3], "%u", &gen_count)
 	|| 1 != sscanf(argv[4], "%u", &pop_count)
 	|| 1 != sscanf(argv[5], "%g", &min)
@@ -183,7 +187,7 @@ static int cmd_evol_quad_eq(int argc, char* argv[]) {
 		fprintf(stderr, "Invalid value\n");
 		return 4;
 	}
-	evol_quad_eq(&abc, gen_count, pop_count, min, max, mut);
+	evol_quad_eq(a, b, c, gen_count, pop_count, min, max, mut);
 	return 0;
 }
 
