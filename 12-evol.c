@@ -22,29 +22,29 @@ user    0m16.649s
 sys 0m0.011s
 */
 
+// Inherit from float - fitness first
 struct XF {
-	float x, fit;
+	float fit, x;
 };
 
-static void quad_eq_calc_fitness(struct XF* xf, float a, float b, float c, float x)
+static float qe_calc_fitness(float a, float b, float c, float x)
 {
     float v = a * x * x + b * x + c;
-    xf->fit = v * v;
-    xf->x = x;
+    return v * v;
 }
 
-static int quad_eq_fitness_sort_proc(const struct XF** xf1, const struct XF** xf2)
+static int qe_fitness_sort_proc(const float** f1, const float** f2)
 {
-    if((*xf1)->fit > (*xf2)->fit)
+    if(**f1 > **f2)
         return 1;
 
-    if((*xf1)->fit < (*xf2)->fit)
+    if(**f1 < **f2)
         return -1;
 
     return 0;
 }
 
-static void quad_eq_calc_and_fill_fitness(struct XF* xf, struct XF** idx, float a, float b, float c, unsigned count, float min, float max)
+static void qe_calc_and_fill_fitness(struct XF* xf, struct XF** idx, float a, float b, float c, unsigned count, float min, float max)
 {
     float step = (max - min) / count;
     float val = min;
@@ -52,7 +52,8 @@ static void quad_eq_calc_and_fill_fitness(struct XF* xf, struct XF** idx, float 
 
     for(i = 0; i < count; i ++, val += step) {
         idx[i] = &xf[i];
-        quad_eq_calc_fitness(idx[i], a, b, c, val);
+        xf[i].x = val;
+        xf[i].fit = qe_calc_fitness(a, b, c, val);
     }
 
     for(i = count; i < 2 * count; i ++) {
@@ -60,14 +61,17 @@ static void quad_eq_calc_and_fill_fitness(struct XF* xf, struct XF** idx, float 
     }
 }
 
-static void quad_eq_reproduce_and_mutate_x(struct XF** idx, float a, float b, float c, unsigned count, float mut)
+static void qe_reproduce_and_mutate_x(struct XF** idx, float a, float b, float c, unsigned count, float mut)
 {
     unsigned i;
-    for(i = 0; i < count; i ++)
-        quad_eq_calc_fitness(idx[i + count], a, b, c, idx[i]->x - mut + mut * 2.0 * drand48());
+    for(i = 0; i < count; i ++) {
+        float val = idx[i]->x - mut + mut * 2.0 * drand48();
+        idx[i + count]->x = val;
+        idx[i + count]->fit = qe_calc_fitness(a, b, c, val);
+    }
 }
 
-static void quad_eq_print_x_fitness(struct XF* const * idx, unsigned count)
+static void qe_print_x_and_fitness(struct XF* const * idx, unsigned count)
 {
     printf("x                    fitness\n");
     printf("----------------------------\n");
@@ -78,26 +82,26 @@ static void quad_eq_print_x_fitness(struct XF* const * idx, unsigned count)
     printf("----------------------------\n");
 }
 
-static void evol_quad_eq(float a, float b, float c, unsigned gen_count, unsigned pop_count, float min, float max, float mut)
+static void qe_evol(float a, float b, float c, unsigned gen_count, unsigned pop_count, float min, float max, float mut)
 {
 	struct XF pop[pop_count * 2];
 	struct XF* index[pop_count * 2];
 
-    quad_eq_calc_and_fill_fitness(pop, index, a, b, c, pop_count, min, max);
+    qe_calc_and_fill_fitness(pop, index, a, b, c, pop_count, min, max);
 
 	srand48(time(0));
 
 	while(gen_count --) {
-        quad_eq_reproduce_and_mutate_x(index, a, b, c, pop_count, mut);
-		qsort(index, pop_count * 2, sizeof(index[0]), (int (*)(const void*, const void*))quad_eq_fitness_sort_proc);
+        qe_reproduce_and_mutate_x(index, a, b, c, pop_count, mut);
+		qsort(index, pop_count * 2, sizeof(index[0]), (int (*)(const void*, const void*))qe_fitness_sort_proc);
         mut /= MUTATION_DECREASE_FACTOR;
 	}
 
-	quad_eq_print_x_fitness(index, pop_count);
+	qe_print_x_and_fitness(index, pop_count);
     printf("Final mutation: %g\n", mut);
 }
 
-static void evol_quad_eq_reverse(float x, unsigned gen_count, unsigned pop_count, float min, float max, float mut)
+static void qe_evol_reverse(float x, unsigned gen_count, unsigned pop_count, float min, float max, float mut)
 {
 /*	
 	int select_proc(const void* x1, const void* x2)
@@ -165,7 +169,7 @@ static void evol_quad_eq_reverse(float x, unsigned gen_count, unsigned pop_count
 	*/
 }
 
-static int cmd_evol_quad_eq(int argc, char* argv[]) {
+static int cmd_qe_evol(int argc, char* argv[]) {
 	if(argc != 9) {
 		fprintf(stderr, "Usage: %s a, b, c, <generation count> <poplation count> <min value> <max value> <mutation>\n", argv[0]);
 		fprintf(stderr, "Example: 2 -4 -2 256 256 -100.0 100.0 1.0\n");
@@ -187,11 +191,11 @@ static int cmd_evol_quad_eq(int argc, char* argv[]) {
 		fprintf(stderr, "Invalid value\n");
 		return 4;
 	}
-	evol_quad_eq(a, b, c, gen_count, pop_count, min, max, mut);
+	qe_evol(a, b, c, gen_count, pop_count, min, max, mut);
 	return 0;
 }
 
-static int cmd_evol_quad_eq_reverse(int argc, char* argv[]) {
+static int cmd_qe_evol_reverse(int argc, char* argv[]) {
 	if(argc != 7) {
 		fprintf(stderr, "Usage: %s x, <generation count> <poplation count> <min value> <max value> <mutation>\n", argv[0]);
 		fprintf(stderr, "Example: 2 -4 -2 256 256 -100.0 100.0 1.0\n");
@@ -211,7 +215,7 @@ static int cmd_evol_quad_eq_reverse(int argc, char* argv[]) {
 		fprintf(stderr, "Invalid value\n");
 		return 4;
 	}
-	evol_quad_eq_reverse(x, gen_count, pop_count, min, max, mut);
+	qe_evol_reverse(x, gen_count, pop_count, min, max, mut);
 	return 0;
 }
 
@@ -227,9 +231,9 @@ int main(int argc, char* argv[])
 	argc --;
 	argv ++;
 	if(!strcmp(*argv, "evol-quad-eq"))
-		return cmd_evol_quad_eq(argc, argv);
+		return cmd_qe_evol(argc, argv);
 	if(!strcmp(*argv, "evol-quad-eq-reverse"))
-		return cmd_evol_quad_eq_reverse(argc, argv);
+		return cmd_qe_evol_reverse(argc, argv);
 	fprintf(stderr, "Unknown subcommand: %s\n", *argv);
 	return 2;
 }
