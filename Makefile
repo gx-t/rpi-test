@@ -3,6 +3,7 @@
 CC=gcc
 DEB=-g
 REL=-O2 -s
+PROF=-pg
 VCLIB=/opt/vc/lib/
 VCINC=/opt/vc/include/
 
@@ -79,6 +80,11 @@ rel: 00-rel 01-rel 02-rel 03-rel 04-rel 05-rel 06-rel 07-rel 08-rel 09-rel 10-re
 	$(CC) -Wall $(DEB) -o 12-evol 12-evol.c
 12-rel:
 	$(CC) -Wall $(REL) -o 12-evol 12-evol.c
+12-prof:
+	$(CC) -Wall $(PROF) -o 12-evol 12-evol.c
+# make 12-prof
+# ./12-evol evol-quad-eq 2 -4 -2 100000 256 -100.0 100.0 1.0
+# gprof 12-evol
 
 
 clean:
