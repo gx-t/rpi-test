@@ -5,23 +5,6 @@
 
 #define MUTATION_DECREASE_FACTOR    1.05
 
-/*
-   time ./12-evol evol-quad-eq 2 -4 -2 100000 256 -100.0 100.0 1.0
-   real    0m20.554s
-   user    0m20.539s
-   sys 0m0.012s
-
-   with adaptive mutation
-   real    0m16.885s
-   user    0m16.830s
-   sys 0m0.031s
-
-   many args instead of struct pointer
-   real    0m16.662s
-   user    0m16.649s
-   sys 0m0.011s
- */
-
 // Inherit from float - fitness first
 struct XF {
     float fit, x;
