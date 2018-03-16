@@ -48,26 +48,26 @@ static void qe_calc_and_fill_fitness(struct XF* xf, struct XF** idx, float a, fl
 {
     float step = (max - min) / count;
     float val = min;
-    unsigned i;
 
-    for(i = 0; i < count; i ++, val += step) {
-        idx[i] = &xf[i];
-        xf[i].x = val;
-        xf[i].fit = qe_calc_fitness(a, b, c, val);
-    }
-
-    for(i = count; i < 2 * count; i ++) {
-        idx[i] = &xf[i];
+    while(count --) {
+        *idx ++ = xf;
+        xf->x = val;
+        xf->fit = qe_calc_fitness(a, b, c, val);
+        xf ++;
+        val += step;
     }
 }
 
 static void qe_reproduce_and_mutate_x(struct XF** idx, float a, float b, float c, unsigned count, float mut)
 {
-    unsigned i;
-    for(i = 0; i < count; i ++) {
-        float val = idx[i]->x - mut + mut * 2.0 * drand48();
-        idx[i + count]->x = val;
-        idx[i + count]->fit = qe_calc_fitness(a, b, c, val);
+    struct XF** idx1 = idx + count;
+
+    while(count --) {
+        float val = (*idx)->x - mut + mut * 2.0 * drand48();
+        (*idx1)->x = val;
+        (*idx1)->fit = qe_calc_fitness(a, b, c, val);
+        idx ++;
+        idx1 ++;
     }
 }
 
@@ -87,7 +87,7 @@ static void qe_evol(float a, float b, float c, unsigned gen_count, unsigned pop_
     struct XF pop[pop_count * 2];
     struct XF* index[pop_count * 2];
 
-    qe_calc_and_fill_fitness(pop, index, a, b, c, pop_count, min, max);
+    qe_calc_and_fill_fitness(pop, index, a, b, c, pop_count * 2, min, max);
 
     srand48(time(0));
 
