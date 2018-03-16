@@ -94,11 +94,9 @@ static void qe_evol(float a, float b, float c, unsigned gen_count, unsigned pop_
     while(gen_count --) {
         qe_reproduce_and_mutate_x(index, a, b, c, pop_count, mut);
         qsort(index, pop_count * 2, sizeof(index[0]), (int (*)(const void*, const void*))qe_fitness_sort_proc);
-        mut /= MUTATION_DECREASE_FACTOR;
     }
 
     qe_print_x_and_fitness(index, pop_count);
-    printf("Final mutation: %g\n", mut);
 }
 
 static void qe_evol_reverse(float x, unsigned gen_count, unsigned pop_count, float min, float max, float mut)
