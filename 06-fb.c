@@ -163,9 +163,16 @@ static int init_fb()
 		perror("Error reading variable information");
 		return 3;
 	}
+    if(32 != vinfo.bits_per_pixel) {
+		close(fd);
+        fprintf(stderr, "Unsupported bits per pixel: %u. Only 32 bpp is supported\n", vinfo.bits_per_pixel);
+        return 4;
+    }
 	g.screen.xres = vinfo.xres;
 	g.screen.yres = vinfo.yres;
 	g.screen.bits_per_pixel = vinfo.bits_per_pixel;
+    g.screen.xoffset = vinfo.xoffset;
+    g.screen.yoffset = vinfo.yoffset;
 	g.screen.line_length = finfo.line_length;
 
 	printf("%dx%d, %dbpp\n", g.screen.xres, g.screen.yres, g.screen.bits_per_pixel);
@@ -178,7 +185,7 @@ static int init_fb()
 	if ((int)g.screen.fbp == -1) {
 		close(fd);
 		perror("Error: failed to map framebuffer device to memory");
-		return 4;
+		return 5;
 	}
 
 	g.screen.fd = fd;
