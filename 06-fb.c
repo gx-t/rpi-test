@@ -9,11 +9,12 @@
 #include <sys/ioctl.h>
 #include <signal.h>
 
+#define BYTES_PER_PIXEL     4
+
 struct {
 	struct {
 		uint32_t xres
 			, yres
-			, bits_per_pixel
 			, xoffset
 			, yoffset
 			, line_length
@@ -163,21 +164,20 @@ static int init_fb()
 		perror("Error reading variable information");
 		return 3;
 	}
-    if(32 != vinfo.bits_per_pixel) {
+    if(BYTES_PER_PIXEL * 8 != vinfo.bits_per_pixel) {
 		close(fd);
-        fprintf(stderr, "Unsupported bits per pixel: %u. Only 32 bpp is supported\n", vinfo.bits_per_pixel);
+        fprintf(stderr, "Unsupported bits per pixel: %u. Only %d bpp is supported\n", vinfo.bits_per_pixel, BYTES_PER_PIXEL * 8);
         return 4;
     }
 	g.screen.xres = vinfo.xres;
 	g.screen.yres = vinfo.yres;
-	g.screen.bits_per_pixel = vinfo.bits_per_pixel;
     g.screen.xoffset = vinfo.xoffset;
     g.screen.yoffset = vinfo.yoffset;
 	g.screen.line_length = finfo.line_length;
 
-	printf("%dx%d, %dbpp\n", g.screen.xres, g.screen.yres, g.screen.bits_per_pixel);
+	printf("%dx%d\n", g.screen.xres, g.screen.yres);
 
-	g.screen.size = g.screen.xres * g.screen.yres * g.screen.bits_per_pixel / 8;
+	g.screen.size = g.screen.xres * g.screen.yres * BYTES_PER_PIXEL;
 
 	g.screen.fbp = (unsigned char *)mmap(0, g.screen.size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 
@@ -257,7 +257,7 @@ static void scan_write_fb()
 		for(x = l; x < r; x++) {
 			g.scan.x = x - g.board.left;
 			g.scan.y = y - g.board.top;
-			offset = (x + g.screen.xoffset) * (g.screen.bits_per_pixel / 8) + (y + g.screen.yoffset) * g.screen.line_length;
+			offset = (x + g.screen.xoffset) * BYTES_PER_PIXEL + (y + g.screen.yoffset) * g.screen.line_length;
 			g.scan.pp = g.screen.fbp + offset;
 			draw();
 		}
