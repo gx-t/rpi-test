@@ -24,12 +24,7 @@ struct {
 	} screen;
 
 	struct {
-		uint32_t gs
-			, left
-			, top
-			, width
-			, height;
-
+		uint32_t gs;
 		struct {
 			uint32_t rad
 				, cx
@@ -57,20 +52,18 @@ struct {
 		} color;
 	} board;
 
-	struct {
-		uint32_t x
-			, y;
-	} scan;
-
 	volatile int32_t running;
 }static g;
 
-static void draw_borders(uint32_t* pp)
+#define BOARD_LEFT      300
+#define BOARD_TOP       300
+#define BOARD_WIDTH     300
+#define BOARD_HEIGHT    200
+
+static void draw_borders(uint32_t* pp, int x, int y)
 {
-	uint32_t x = g.scan.x
-		, y = g.scan.y
-		, r = g.board.width - 1
-		, b = g.board.height - 1;
+	uint32_t r = BOARD_WIDTH - 1
+		, b = BOARD_HEIGHT - 1;
 
 	if(0 == x || r == x || 0 == y || b == y) {
 		*pp = g.board.color.border;
@@ -79,45 +72,47 @@ static void draw_borders(uint32_t* pp)
 
 static void process_ball_collision(int32_t cx, int32_t cy)
 {
+    g.board.ball.vx = -g.board.ball.vx;
+    g.board.ball.vy = -g.board.ball.vy;
 	if(0 == cx) {
-		g.board.ball.vy = -g.board.ball.vy;
-	} else if(0 == cy) {
 		g.board.ball.vx = -g.board.ball.vx;
+	} else if(0 == cy) {
+		g.board.ball.vy = -g.board.ball.vy;
 	}
 }
 
-static void draw_line(uint32_t* pp, int32_t x, int32_t y, int32_t len, uint32_t color)
+static void draw_line(uint32_t* pp, int x, int y, int32_t cx, int32_t cy, int32_t len, uint32_t color)
 {
-	if(y != g.scan.y) 
+	if(cy != y) 
 		return;
-	if(g.scan.x < x || g.scan.x > x + len)
+	if(x < cx || x > cx + len)
 		return;
 
 	*pp = color;
 }
 
-static void draw_walls(uint32_t* pp)
+static void draw_walls(uint32_t* pp, int x, int y)
 {
 	int32_t sy = 4 * g.board.gs;
-	int32_t y = sy;
-	draw_line(pp, g.board.wall.x0, y, g.board.wall.length, 0x00FF0000);
-	y += sy;
-	draw_line(pp, g.board.wall.x1, y, g.board.wall.length, 0x0000FF00);
-	y += sy;
-	draw_line(pp, g.board.wall.x2, y, g.board.wall.length, 0x000000FF);
-	y += sy;
-	draw_line(pp, g.board.wall.x3, y, g.board.wall.length, 0x0000FFFF);
+	int32_t cy = sy;
+	draw_line(pp, x, y, g.board.wall.x0, cy, g.board.wall.length, 0x00FF0000);
+	cy += sy;
+	draw_line(pp, x, y, g.board.wall.x1, cy, g.board.wall.length, 0x0000FF00);
+	cy += sy;
+	draw_line(pp, x, y, g.board.wall.x2, cy, g.board.wall.length, 0x000000FF);
+	cy += sy;
+	draw_line(pp, x, y, g.board.wall.x3, cy, g.board.wall.length, 0x0000FFFF);
 }
 
-static void draw_ball(uint32_t* pp)
+static void draw_ball(uint32_t* pp, int x, int y)
 {
-	int32_t cx = (int32_t)g.scan.x - (int32_t)g.board.ball.cx
-		, cy = (int32_t)g.scan.y - (int32_t)g.board.ball.cy
-		, r = g.board.ball.rad;
+    x -= (int)g.board.ball.cx;
+    y -= (int)g.board.ball.cy;
+    int r = (int)g.board.ball.rad;
 
-	if(cx * cx + cy * cy < r * r) {
+	if(x * x + y * y < r * r) {
 		if(*pp != g.board.color.bground)
-			process_ball_collision(cx, cy);
+			process_ball_collision(x, y);
 
 		*pp = g.board.color.ball;
 	}
@@ -127,13 +122,6 @@ static void update_ball_moving()
 {
 	g.board.ball.cx += g.board.ball.vx;
 	g.board.ball.cy += g.board.ball.vy;
-}
-
-static void draw(uint32_t* pp) {
-	*pp = g.board.color.bground;
-	draw_borders(pp);
-	draw_walls(pp);
-	draw_ball(pp);
 }
 
 //-----------------------------------------------------------------------------
@@ -202,8 +190,8 @@ static void free_fb()
 static void init_ball()
 {
 	g.board.ball.rad = g.board.gs;
-	g.board.ball.cx = g.board.width / 2;
-	g.board.ball.cy = g.board.height / 2;
+	g.board.ball.cx = BOARD_WIDTH / 2;
+	g.board.ball.cy = BOARD_HEIGHT / 2;
 	g.board.ball.vx = -2;
 	g.board.ball.vy = -3;
 }
@@ -229,10 +217,6 @@ static void init_wall()
 static void init_board()
 {
 	g.board.gs		= 10;
-	g.board.left	= 30 * g.board.gs;
-	g.board.top		= 30 * g.board.gs;
-	g.board.width	= 30 * g.board.gs;
-	g.board.height	= 20 * g.board.gs;
 
 	init_ball();
 	init_color();
@@ -246,13 +230,17 @@ static void update_board()
 
 static void scan_write_fb()
 {
-    uint8_t* pp = g.screen.fbp;
-    pp += (g.board.left + g.screen.xoffset) * BYTES_PER_PIXEL;
-    pp += (g.board.top + g.screen.yoffset) * g.screen.line_length;
+    int x, y;
+    uint32_t* pp = (uint32_t*)g.screen.fbp;
+    pp += (BOARD_LEFT + g.screen.xoffset);
+    pp += (BOARD_TOP + g.screen.yoffset) * g.screen.line_length / BYTES_PER_PIXEL;
 
-	for(g.scan.y = 0; g.scan.y < g.board.height; g.scan.y++, pp += (g.screen.line_length - g.board.width * BYTES_PER_PIXEL)) {
-		for(g.scan.x = 0; g.scan.x < g.board.width; g.scan.x++, pp += BYTES_PER_PIXEL) {
-			draw((uint32_t*)pp);
+	for(y = 0; y < BOARD_HEIGHT; y++, pp += (g.screen.line_length / BYTES_PER_PIXEL - BOARD_WIDTH)) {
+		for(x = 0; x < BOARD_WIDTH; x++, pp ++) {
+            *pp = g.board.color.bground;
+            draw_borders(pp, x, y);
+            draw_walls(pp, x, y);
+            draw_ball(pp, x, y);
 		}
 	}
 }
