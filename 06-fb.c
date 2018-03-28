@@ -13,9 +13,7 @@
 
 struct {
     struct {
-        uint32_t xres
-            , yres
-            , xoffset
+        uint32_t xoffset
             , yoffset
             , line_length
             , size;
@@ -156,15 +154,13 @@ static int init_fb()
         fprintf(stderr, "Unsupported bits per pixel: %u. Only %d bpp is supported\n", vinfo.bits_per_pixel, BYTES_PER_PIXEL * 8);
         return 4;
     }
-    g.screen.xres = vinfo.xres;
-    g.screen.yres = vinfo.yres;
     g.screen.xoffset = vinfo.xoffset;
     g.screen.yoffset = vinfo.yoffset;
     g.screen.line_length = finfo.line_length;
 
-    printf("%dx%d\n", g.screen.xres, g.screen.yres);
+    printf("%dx%d\n", vinfo.xres, vinfo.yres);
 
-    g.screen.size = g.screen.xres * g.screen.yres * BYTES_PER_PIXEL;
+    g.screen.size = vinfo.xres * vinfo.yres * BYTES_PER_PIXEL;
 
     g.screen.fbp = (unsigned char *)mmap(0, g.screen.size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 
