@@ -1,5 +1,5 @@
 #set ARM gcc compiler/cross-compiler
-MAKEFLAGS+=-j 13
+MAKEFLAGS+=-j 14
 CC=gcc
 DEB=-g
 REL=-O2 -s
@@ -7,9 +7,9 @@ PROF=-pg
 VCLIB=/opt/vc/lib/
 VCINC=/opt/vc/include/
 
-deb: 00-deb 01-deb 02-deb 03-deb 04-deb 05-deb 06-deb 07-deb 08-deb 09-deb 10-deb 11-deb 12-deb
+deb: 00-deb 01-deb 02-deb 03-deb 04-deb 05-deb 06-deb 07-deb 08-deb 09-deb 10-deb 11-deb 12-deb 13-deb
 
-rel: 00-rel 01-rel 02-rel 03-rel 04-rel 05-rel 06-rel 07-rel 08-rel 09-rel 10-rel 11-rel 12-rel
+rel: 00-rel 01-rel 02-rel 03-rel 04-rel 05-rel 06-rel 07-rel 08-rel 09-rel 10-rel 11-rel 12-rel 13-rel
 
 00-deb:
 	$(CC) -Wall $(DEB) -o 00-mouse 00-mouse.c
@@ -86,9 +86,13 @@ rel: 00-rel 01-rel 02-rel 03-rel 04-rel 05-rel 06-rel 07-rel 08-rel 09-rel 10-re
 # ./12-evol evol-quad-eq 2 -4 -2 100000 256 -100.0 100.0 1.0
 # gprof 12-evol
 
+13-deb:
+	$(CC) -Wall $(DEB) -o 13-lora-tx 13-lora-tx.c -lpigpio -lpthread
+13-rel:
+	$(CC) -Wall $(REL) -o 13-lora-tx 13-lora-tx.c -lpigpio -lpthread
 
 clean:
-	rm -rf 00-mouse 01-keyboard 02-neon 03-camera 04-stream 05-neon 06-fb 07-chirp 08-resonance 09-noise 10-resonance 11-sweep 12-evol rm *.s
+	rm -rf 00-mouse 01-keyboard 02-neon 03-camera 04-stream 05-neon 06-fb 07-chirp 08-resonance 09-noise 10-resonance 11-sweep 12-evol 13-lora-tx rm *.s
 
 ctags:
 	ctags -R . /usr/include/ /opt/vc/include/
