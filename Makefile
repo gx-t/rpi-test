@@ -1,5 +1,5 @@
 #set ARM gcc compiler/cross-compiler
-MAKEFLAGS+=-j 14
+MAKEFLAGS+=-j 15
 CC=gcc
 DEB=-g
 REL=-O2 -s
