@@ -43,7 +43,7 @@ static void lora_reset_irq(int spi)
     lora_write_reg(spi, 0x12, 0xff);
 }
 
-static void lora_tx(int spi)
+static void lora_rx(int spi)
 {
     static uint8_t lora_init_blob[] = {
         0x01, 0x88 //Sleep Mode
@@ -106,7 +106,7 @@ int main()
         return 2;
     }
     print_reg(spi, 0x42);
-    lora_tx(spi);
+    lora_rx(spi);
     spiClose(spi);
     return 0;
 }
