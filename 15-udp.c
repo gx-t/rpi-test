@@ -12,8 +12,8 @@ static char* argv_0 = 0;
 static int show_usage(int err)
 {
     fprintf(stderr, "Usage:\n");
-    fprintf(stderr, "\t%s client <params>\n", argv_0);
-    fprintf(stderr, "\t%s server <params>\n", argv_0);
+    fprintf(stderr, "\t%s client <id> <server address> <server port>\n", argv_0);
+    fprintf(stderr, "\t%s server <listening port>\n", argv_0);
     return err;
 }
 
@@ -114,6 +114,7 @@ static int server_cmd_broadcast(const uint8_t* buff, int len, const struct socka
 
 static int server_dispatch_cmd(const uint8_t* buff, int len, const struct sockaddr_in* client_addr, struct CLIENT_INFO* client_db)
 {
+    fprintf(stderr, "%u, %s:%d -->>\n", buff[1], inet_ntoa(client_addr->sin_addr), ntohs(client_addr->sin_port));
     int (*cmd_handler_arr[])(const uint8_t*, int, const struct sockaddr_in*, struct CLIENT_INFO*) = {
         [CMD_REG] = server_cmd_reg,
         [CMD_BROADCAST] = server_cmd_broadcast
