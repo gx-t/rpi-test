@@ -31,13 +31,13 @@ static int arg_id(const char* id_str)
 
 static int arg_ip(const char* ip_str, struct sockaddr_in* addr)
 {
-	struct hostent* he = gethostbyname(ip_str);
+    struct hostent* he = gethostbyname(ip_str);
     if(!he) {
         perror(ip_str);
         return show_usage(4);
     }
 
-	memcpy(&addr->sin_addr, he->h_addr_list[0], sizeof(addr->sin_addr));
+    memcpy(&addr->sin_addr, he->h_addr_list[0], sizeof(addr->sin_addr));
 
     return 0;
 }
@@ -57,7 +57,7 @@ static int arg_port(const char* port_str)
 enum {
     CMD_REG = 0,
     CMD_BROADCAST,
-    
+
     CMD_END
 };
 
@@ -66,7 +66,7 @@ static int g_sock = -1;
 static int client_send_reg(struct sockaddr_in* addr, int id)
 {
     uint8_t buff[2] = {CMD_REG, id};
-	if(sizeof(buff) != sendto(g_sock, buff, sizeof(buff), 0, (struct sockaddr *)addr, sizeof(struct sockaddr_in))) {
+    if(sizeof(buff) != sendto(g_sock, buff, sizeof(buff), 0, (struct sockaddr *)addr, sizeof(struct sockaddr_in))) {
         perror("sendto");
         return 6;
     }
