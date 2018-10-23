@@ -115,8 +115,8 @@ static int server_cmd_broadcast(const uint8_t* buff, int len, const struct socka
 static int server_dispatch_cmd(const uint8_t* buff, int len, const struct sockaddr_in* client_addr, struct CLIENT_INFO* client_db)
 {
     int (*cmd_handler_arr[])(const uint8_t*, int, const struct sockaddr_in*, struct CLIENT_INFO*) = {
-        server_cmd_reg,
-        server_cmd_broadcast
+        [CMD_REG] = server_cmd_reg,
+        [CMD_BROADCAST] = server_cmd_broadcast
     };
 
     if(CMD_END <= *buff) {
