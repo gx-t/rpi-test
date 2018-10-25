@@ -68,6 +68,7 @@ static int recv_loop()
         return 3;
     }
     while(-1 != (len = recvfrom(0, buff, sizeof(buff), 0, (struct sockaddr*)&addr, &addr_len))) {
+        fprintf(stderr, "%s:%d:\n", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
         if(len != write(1, buff, len))
             perror("Write stdout");
     }
