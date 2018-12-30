@@ -166,7 +166,7 @@ static int init_fb(struct ALL* all)
     all->screen.fbp = (unsigned char *)mmap(0, all->screen.size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 
 
-    if ((int)all->screen.fbp == -1) {
+    if (all->screen.fbp == (uint8_t*)-1) {
         close(fd);
         perror("Error: failed to map framebuffer device to memory");
         return 5;
