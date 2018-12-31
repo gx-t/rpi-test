@@ -5,18 +5,18 @@
 
 #define MUTATION_DECREASE_FACTOR    1.05
 
-// Inherit from float - fitness first
+// Inherit from double - fitness first
 struct XF {
-    float fit, x;
+    double fit, x;
 };
 
-static float qe_calc_fitness(float a, float b, float c, float x)
+static double qe_calc_fitness(double a, double b, double c, double x)
 {
-    float v = a * x * x + b * x + c;
+    double v = a * x * x + b * x + c;
     return v * v;
 }
 
-static int qe_fitness_sort_proc(const float** f1, const float** f2)
+static int qe_fitness_sort_proc(const double** f1, const double** f2)
 {
     if(**f1 > **f2)
         return 1;
@@ -27,10 +27,10 @@ static int qe_fitness_sort_proc(const float** f1, const float** f2)
     return 0;
 }
 
-static void qe_calc_and_fill_fitness(struct XF* xf, struct XF** idx, float a, float b, float c, unsigned count, float min, float max)
+static void qe_calc_and_fill_fitness(struct XF* xf, struct XF** idx, double a, double b, double c, unsigned count, double min, double max)
 {
-    float step = (max - min) / count;
-    float val = min;
+    double step = (max - min) / count;
+    double val = min;
 
     while(count --) {
         *idx ++ = xf;
@@ -41,12 +41,12 @@ static void qe_calc_and_fill_fitness(struct XF* xf, struct XF** idx, float a, fl
     }
 }
 
-static void qe_reproduce_and_mutate_x(struct XF** idx, float a, float b, float c, unsigned count, float mut)
+static void qe_reproduce_and_mutate_x(struct XF** idx, double a, double b, double c, unsigned count, double mut)
 {
     struct XF** idx1 = idx + count;
 
     while(count --) {
-        float val = (*idx)->x - mut + mut * 2.0 * drand48();
+        double val = (*idx)->x - mut + mut * 2.0 * drand48();
         (*idx1)->x = val;
         (*idx1)->fit = qe_calc_fitness(a, b, c, val);
         idx ++;
@@ -65,7 +65,7 @@ static void qe_print_x_and_fitness(struct XF* const * idx, unsigned count)
     printf("-------------------------------------------\n");
 }
 
-static void qe_evol(float a, float b, float c, unsigned gen_count, unsigned pop_count, float min, float max, float mut)
+static void qe_evol(double a, double b, double c, unsigned gen_count, unsigned pop_count, double min, double max, double mut)
 {
     struct XF pop[pop_count * 2];
     struct XF* index[pop_count * 2];
@@ -81,16 +81,16 @@ static void qe_evol(float a, float b, float c, unsigned gen_count, unsigned pop_
     }
 
     qe_print_x_and_fitness(index, pop_count);
-    printf("Final mutation:\t\t\t%g\nMutation decrease factor:\t%g\n", mut, MUTATION_DECREASE_FACTOR);
+    printf("Final mutation:\t\t\t%lf\nMutation decrease factor:\t%lf\n", mut, MUTATION_DECREASE_FACTOR);
 }
 
-static void qe_evol_reverse(float x, unsigned gen_count, unsigned pop_count, float min, float max, float mut)
+static void qe_evol_reverse(double x, unsigned gen_count, unsigned pop_count, double min, double max, double mut)
 {
     /*	
         int select_proc(const void* x1, const void* x2)
         {
-        float v1 = a * *(float*)x1 * *(float*)x1 + b * *(float*)x1 + c;
-        float v2 = a * *(float*)x2 * *(float*)x2 + b * *(float*)x2 + c;
+        double v1 = a * *(double*)x1 * *(double*)x1 + b * *(double*)x1 + c;
+        double v2 = a * *(double*)x2 * *(double*)x2 + b * *(double*)x2 + c;
         v1 *= v1;
         v2 *= v2;
         if(v1 > v2)
@@ -104,8 +104,8 @@ static void qe_evol_reverse(float x, unsigned gen_count, unsigned pop_count, flo
 
         void fill()
         {
-        float step = (max - min) / pop_count;
-        float val = min;
+        double step = (max - min) / pop_count;
+        double val = min;
         unsigned i;
         for(i = 0; i < pop_count; i ++, val += step) {
         pop[i] = val;
@@ -123,7 +123,7 @@ static void qe_evol_reverse(float x, unsigned gen_count, unsigned pop_count, flo
         void print() {
         unsigned i;
         for(i = 0; i < pop_count; i ++) {
-        printf("%g ", pop[i]);
+        printf("%lf ", pop[i]);
         }
         printf("\n----------------------------\n");
         }
@@ -148,7 +148,7 @@ static void qe_evol_reverse(float x, unsigned gen_count, unsigned pop_count, flo
 
         clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &t2);
         print();
-        fprintf(stderr, "CPU TIME: %g us\n", ((double)t2.tv_nsec - (double)t1.tv_nsec) / 1000);
+        fprintf(stderr, "CPU TIME: %lf us\n", ((double)t2.tv_nsec - (double)t1.tv_nsec) / 1000);
      */
 }
 
@@ -161,16 +161,16 @@ static int cmd_qe_evol(int argc, char* argv[]) {
     argc --;
     argv ++;
 
-    float min, max, mut, a = 0, b = 0, c = 0;
+    double min, max, mut, a = 0, b = 0, c = 0;
     unsigned gen_count, pop_count;
-    if(1 != sscanf(argv[0], "%g", &a)
-            || 1 != sscanf(argv[1], "%g", &b)
-            || 1 != sscanf(argv[2], "%g", &c)
+    if(1 != sscanf(argv[0], "%lf", &a)
+            || 1 != sscanf(argv[1], "%lf", &b)
+            || 1 != sscanf(argv[2], "%lf", &c)
             || 1 != sscanf(argv[3], "%u", &gen_count)
             || 1 != sscanf(argv[4], "%u", &pop_count)
-            || 1 != sscanf(argv[5], "%g", &min)
-            || 1 != sscanf(argv[6], "%g", &max)
-            || 1 != sscanf(argv[7], "%g", &mut)) {
+            || 1 != sscanf(argv[5], "%lf", &min)
+            || 1 != sscanf(argv[6], "%lf", &max)
+            || 1 != sscanf(argv[7], "%lf", &mut)) {
         fprintf(stderr, "Invalid value\n");
         return 4;
     }
@@ -187,14 +187,14 @@ static int cmd_qe_evol_reverse(int argc, char* argv[]) {
     argc --;
     argv ++;
 
-    float x, min, max, mut;
+    double x, min, max, mut;
     unsigned gen_count, pop_count;
-    if(1 != sscanf(argv[0], "%g", &x)
+    if(1 != sscanf(argv[0], "%lf", &x)
             || 1 != sscanf(argv[1], "%u", &gen_count)
             || 1 != sscanf(argv[2], "%u", &pop_count)
-            || 1 != sscanf(argv[3], "%g", &min)
-            || 1 != sscanf(argv[4], "%g", &max)
-            || 1 != sscanf(argv[5], "%g", &mut)) {
+            || 1 != sscanf(argv[3], "%lf", &min)
+            || 1 != sscanf(argv[4], "%lf", &max)
+            || 1 != sscanf(argv[5], "%lf", &mut)) {
         fprintf(stderr, "Invalid value\n");
         return 4;
     }
