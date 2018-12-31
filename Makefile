@@ -1,5 +1,5 @@
 #set ARM gcc compiler/cross-compiler
-MAKEFLAGS+=-j 15
+MAKEFLAGS+=-j 16
 CC=gcc
 DEB=-Wall -g
 REL=-Wall -O3 -s
@@ -105,7 +105,7 @@ clean:
 	rm -rf 00-mouse 01-keyboard 02-neon 03-camera 04-stream 05-neon 06-fb 07-chirp 08-resonance 09-noise 10-resonance 11-sweep 12-evol 13-lora-tx 14-lora-rx 15-udp rm *.s
 
 ctags:
-	ctags -R . /usr/include/ /opt/vc/include/
+	ctags -R . /usr/include/ /opt/vc/include/ /usr/lib/gcc/arm-linux-gnueabihf/6/include
 
 asm:
 #	$(CC) -c -O2 -mcpu=cortex-a53 -mfpu=neon 02-neon.c -mtune=cortex-a53 -Wa,-a,-ad > 02-neon.asm
