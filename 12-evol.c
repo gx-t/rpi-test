@@ -62,7 +62,7 @@ static void qe_print_x_and_fitness(struct XF* const * idx, unsigned count)
         printf("%-16g %11g\n", (*idx)->x, (*idx)->fit);
         idx ++;
     }
-    printf("----------------------------\n");
+    printf("-------------------------------------------\n");
 }
 
 static void qe_evol(float a, float b, float c, unsigned gen_count, unsigned pop_count, float min, float max, float mut)
@@ -81,7 +81,7 @@ static void qe_evol(float a, float b, float c, unsigned gen_count, unsigned pop_
     }
 
     qe_print_x_and_fitness(index, pop_count);
-    printf("Final mutation: %g\n", mut);
+    printf("Final mutation:\t\t\t%g\nMutation decrease factor:\t%g\n", mut, MUTATION_DECREASE_FACTOR);
 }
 
 static void qe_evol_reverse(float x, unsigned gen_count, unsigned pop_count, float min, float max, float mut)
