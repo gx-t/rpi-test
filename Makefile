@@ -9,7 +9,7 @@ VCINC=/opt/vc/include/
 ifeq ($(shell uname -m), armv7l)
 	MFLAGS=-mcpu=cortex-a53 -mfpu=neon -mtune=cortex-a53
 else
-    MFLAGS=""
+    MFLAGS=
 endif
 
 deb: 00-deb 01-deb 02-deb 03-deb 04-deb 05-deb 06-deb 07-deb 08-deb 09-deb 10-deb 11-deb 12-deb 13-deb 14-deb 15-deb
