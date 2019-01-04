@@ -6,6 +6,11 @@ REL=-Wall -O3 -s
 PROF=-Wall -pg
 VCLIB=/opt/vc/lib/
 VCINC=/opt/vc/include/
+ifeq ($(shell uname -m), armv7l)
+	MFLAGS=-mcpu=cortex-a53 -mfpu=neon -mtune=cortex-a53
+else
+    MFLAGS=""
+endif
 
 deb: 00-deb 01-deb 02-deb 03-deb 04-deb 05-deb 06-deb 07-deb 08-deb 09-deb 10-deb 11-deb 12-deb 13-deb 14-deb 15-deb
 
@@ -24,57 +29,57 @@ rel: 00-rel 01-rel 02-rel 03-rel 04-rel 05-rel 06-rel 07-rel 08-rel 09-rel 10-re
 
 
 02-deb:
-	$(CC) $(DEB) -mcpu=cortex-a53 -mfpu=neon -mtune=cortex-a53 -o 02-neon 02-neon.c
+	$(CC) $(DEB) $(MFLAGS) -o 02-neon 02-neon.c
 02-rel:
-	$(CC) $(REL) -mcpu=cortex-a53 -mfpu=neon -mtune=cortex-a53 -o 02-neon 02-neon.c
+	$(CC) $(REL) $(MFLAGS) -o 02-neon 02-neon.c
 
 
 03-deb:
-	$(CC) $(DEB) -mcpu=cortex-a53 -mfpu=neon -o 03-camera 03-camera.c
+	$(CC) $(DEB) $(MFLAGS) -o 03-camera 03-camera.c
 03-rel:
-	$(CC) $(REL) -mcpu=cortex-a53 -mfpu=neon -o 03-camera 03-camera.c
+	$(CC) $(REL) $(MFLAGS) -o 03-camera 03-camera.c
 
 
 04-deb:
-	$(CC) $(DEB) -mcpu=cortex-a53 -mfpu=neon -o 04-stream 04-stream.c
+	$(CC) $(DEB) $(MFLAGS) -o 04-stream 04-stream.c
 04-rel:
-	$(CC) $(REL) -mcpu=cortex-a53 -mfpu=neon -o 04-stream 04-stream.c
+	$(CC) $(REL) $(MFLAGS) -o 04-stream 04-stream.c
 
 
 05-deb:
-	$(CC) $(DEB) -mcpu=cortex-a53 -mfpu=neon -mtune=cortex-a53 -o 05-neon 05-neon.c
+	$(CC) $(DEB) $(MFLAGS) -o 05-neon 05-neon.c
 05-rel:
-	$(CC) $(REL) -mcpu=cortex-a53 -mfpu=neon -mtune=cortex-a53 -o 05-neon 05-neon.c
+	$(CC) $(REL) $(MFLAGS) -o 05-neon 05-neon.c
 
 06-deb:
-	$(CC) $(DEB) -mcpu=cortex-a53 -mfpu=neon -mtune=cortex-a53 -o 06-fb 06-fb.c
+	$(CC) $(DEB) $(MFLAGS) -o 06-fb 06-fb.c
 06-rel:
-	$(CC) $(REL) -mcpu=cortex-a53 -mfpu=neon -mtune=cortex-a53 -o 06-fb 06-fb.c
+	$(CC) $(REL) $(MFLAGS) -o 06-fb 06-fb.c
 
 07-deb:
-	$(CC) $(DEB) -mcpu=cortex-a53 -mfpu=neon -mtune=cortex-a53 -o 07-chirp 07-chirp.c
+	$(CC) $(DEB) $(MFLAGS) -o 07-chirp 07-chirp.c
 07-rel:
-	$(CC) $(REL) -mcpu=cortex-a53 -mfpu=neon -mtune=cortex-a53 -o 07-chirp 07-chirp.c
+	$(CC) $(REL) $(MFLAGS) -o 07-chirp 07-chirp.c
 
 08-deb:
-	$(CC) $(DEB) -mcpu=cortex-a53 -mfpu=neon -mtune=cortex-a53 -o 08-resonance 08-resonance.c -lm
+	$(CC) $(DEB) $(MFLAGS) -o 08-resonance 08-resonance.c -lm
 08-rel:
-	$(CC) $(REL) -mcpu=cortex-a53 -mfpu=neon -mtune=cortex-a53 -o 08-resonance 08-resonance.c -lm
+	$(CC) $(REL) $(MFLAGS) -o 08-resonance 08-resonance.c -lm
 
 09-deb:
-	$(CC) $(DEB) -mcpu=cortex-a53 -mfpu=neon -mtune=cortex-a53 -o 09-noise 09-noise.c
+	$(CC) $(DEB) $(MFLAGS) -o 09-noise 09-noise.c
 09-rel:
-	$(CC) $(REL) -mcpu=cortex-a53 -mfpu=neon -mtune=cortex-a53 -o 09-noise 09-noise.c
+	$(CC) $(REL) $(MFLAGS) -o 09-noise 09-noise.c
 
 10-deb:
-	$(CC) $(DEB) -mcpu=cortex-a53 -mfpu=neon -mtune=cortex-a53 -o 10-resonance 10-resonance.c
+	$(CC) $(DEB) $(MFLAGS) -o 10-resonance 10-resonance.c
 10-rel:
-	$(CC) $(REL) -mcpu=cortex-a53 -mfpu=neon -mtune=cortex-a53 -o 10-resonance 10-resonance.c
+	$(CC) $(REL) $(MFLAGS) -o 10-resonance 10-resonance.c
 
 11-deb:
-	$(CC) $(DEB) -mcpu=cortex-a53 -mfpu=neon -mtune=cortex-a53 -o 11-sweep 11-sweep.c
+	$(CC) $(DEB) $(MFLAGS) -o 11-sweep 11-sweep.c
 11-rel:
-	$(CC) $(REL) -mcpu=cortex-a53 -mfpu=neon -mtune=cortex-a53 -o 11-sweep 11-sweep.c
+	$(CC) $(REL) $(MFLAGS) -o 11-sweep 11-sweep.c
 
 12-deb:
 	$(CC) $(DEB) -o 12-evol 12-evol.c
