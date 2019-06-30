@@ -1,5 +1,5 @@
 #set ARM gcc compiler/cross-compiler
-MAKEFLAGS+=-j 16
+MAKEFLAGS+=-j 17
 CC=gcc
 DEB=-Wall -g
 REL=-Wall -O3 -s
@@ -106,8 +106,15 @@ rel: 00-rel 01-rel 02-rel 03-rel 04-rel 05-rel 06-rel 07-rel 08-rel 09-rel 10-re
 15-rel:
 	$(CC) $(REL) -o 15-udp 15-udp.c
 
+16-deb:
+	$(CC) $(DEB) -o 16-png-evol 16-png-evol.c -lpng
+16-rel:
+	$(CC) $(REL) -o 16-png-evol 16-png-evol.c -lpng
+16-mp4:
+	./16-png-evol | ffmpeg -y -r 2 -i - -c:v libx264 -vf "fps=25,format=yuv420p" 16-out.mp4
+
 clean:
-	rm -rf 00-mouse 01-keyboard 02-neon 03-camera 04-stream 05-neon 06-fb 07-chirp 08-resonance 09-noise 10-resonance 11-sweep 12-evol 13-lora-tx 14-lora-rx 15-udp rm *.s
+	rm -rf 00-mouse 01-keyboard 02-neon 03-camera 04-stream 05-neon 06-fb 07-chirp 08-resonance 09-noise 10-resonance 11-sweep 12-evol 13-lora-tx 14-lora-rx 15-udp 16-png-evol rm *.s rm *.mp4
 
 ctags:
 	ctags -R . /usr/include/ /opt/vc/include/ /usr/lib/gcc/arm-linux-gnueabihf/6/include
