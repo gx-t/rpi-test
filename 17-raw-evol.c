@@ -3,33 +3,28 @@
 #include <time.h>
 #include <stdint.h>
 
-#define PIXEL_SIZE 3
-#define PIXEL_DEPTH 8
 #define WIDTH 200
 #define HEIGHT 200
 #define DOT_COUNT 400
 
+//time ./17-raw-evol > /dev/null
+//uint8_t and uint32_t:
+//real    0m0.019s
+//user    0m0.018s
+//sys 0m0.002s
 
-//x = -100 +100
-//y = -100 +100
 
 struct DOT
 {
     int x, y, distance;
 };
 
-static void erase(unsigned width, unsigned height, uint8_t* data, uint8_t red, uint8_t green, uint8_t blue)
+static void erase(unsigned width, unsigned height, uint32_t* bitmap, uint32_t color)
 {
     unsigned x, y;
     for(y = 0; y < height; y ++)
-    {
         for(x = 0; x < width; x ++)
-        {
-            *data ++ = red;
-            *data ++ = green;
-            *data ++ = blue;
-        }
-    }
+            *bitmap ++ = color;
 }
 
 static void init_random_dots(unsigned width, unsigned height, unsigned count, struct DOT* dots)
@@ -45,20 +40,16 @@ static void init_random_dots(unsigned width, unsigned height, unsigned count, st
 
 static void draw_dots(unsigned width
         , unsigned height
-        , uint8_t* data
+        , uint32_t* bitmap
         , unsigned count
         , struct DOT* dots
-        , uint8_t red
-        , uint8_t green
-        , uint8_t blue)
+        , uint32_t color)
 {
     while(count --)
     {
-        uint8_t* p = data;
-        p += (dots->x + width / 2 + (dots->y + height / 2) * width) * PIXEL_SIZE;
-        *p ++ = red;
-        *p ++ = green;
-        *p ++ = blue;
+        uint32_t* p = bitmap;
+        p += (dots->x + width / 2 + (dots->y + height / 2) * width);
+        *p ++ = color;
         dots ++;
     }
 }
@@ -98,13 +89,13 @@ int main()
     int result = 0;
     struct DOT dots[DOT_COUNT]; 
     unsigned width = WIDTH, height = HEIGHT, file_num;
-    uint8_t bitmap[PIXEL_SIZE * width * height];
+    uint32_t bitmap[width * height];
     srand(time(0));
     init_random_dots(width, height, DOT_COUNT, dots);
     for(file_num = 0; !result && file_num < 30; file_num ++)
     {
-        erase(width, height, bitmap, 64, 64, 64);
-        draw_dots(width, height, bitmap, DOT_COUNT, dots, 255, 255, 255);
+        erase(width, height, bitmap, 0x00000000);
+        draw_dots(width, height, bitmap, DOT_COUNT, dots, 0xFFFFFFFF);
         fwrite(bitmap, sizeof(bitmap), 1, stdout);
         fflush(stdout);
         calc_dot_deltas(width, height, 75, DOT_COUNT, dots);

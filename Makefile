@@ -118,7 +118,7 @@ rel: 00-rel 01-rel 02-rel 03-rel 04-rel 05-rel 06-rel 07-rel 08-rel 09-rel 10-re
 17-rel:
 	$(CC) $(REL) -o 17-raw-evol 17-raw-evol.c
 17-mp4:
-	./17-raw-evol | ffmpeg -y -s 200x200 -pix_fmt rgb24 -f rawvideo -r 2 -i - -c:v libx264 -vf "fps=25,format=yuv420p" 17-out.mp4
+	./17-raw-evol | ffmpeg -y -s 200x200 -pix_fmt rgba -f rawvideo -r 2 -i - -c:v libx264 -vf "fps=25,format=yuv420p" 17-out.mp4
 
 clean:
 	rm -rf 00-mouse 01-keyboard 02-neon 03-camera 04-stream 05-neon 06-fb 07-chirp 08-resonance 09-noise 10-resonance 11-sweep 12-evol 13-lora-tx 14-lora-rx 15-udp 16-png-evol 17-raw-evol rm *.s rm *.mp4

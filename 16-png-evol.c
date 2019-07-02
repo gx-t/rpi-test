@@ -9,6 +9,11 @@
 #define HEIGHT 200
 #define DOT_COUNT 400
 
+// time ./16-png-evol > /dev/null
+//real    0m0.342s
+//user    0m0.341s
+//sys 0m0.000s
+
 
 //x = -100 +100
 //y = -100 +100
