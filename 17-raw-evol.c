@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#include <png.h>
+#include <stdint.h>
 
 #define PIXEL_SIZE 3
 #define PIXEL_DEPTH 8
@@ -18,7 +18,7 @@ struct DOT
     int x, y, distance;
 };
 
-static void erase(unsigned width, unsigned height, png_bytep data, png_byte red, png_byte green, png_byte blue)
+static void erase(unsigned width, unsigned height, uint8_t* data, uint8_t red, uint8_t green, uint8_t blue)
 {
     unsigned x, y;
     for(y = 0; y < height; y ++)
@@ -45,16 +45,16 @@ static void init_random_dots(unsigned width, unsigned height, unsigned count, st
 
 static void draw_dots(unsigned width
         , unsigned height
-        , png_bytep data
+        , uint8_t* data
         , unsigned count
         , struct DOT* dots
-        , png_byte red
-        , png_byte green
-        , png_byte blue)
+        , uint8_t red
+        , uint8_t green
+        , uint8_t blue)
 {
     while(count --)
     {
-        png_bytep p = data;
+        uint8_t* p = data;
         p += (dots->x + width / 2 + (dots->y + height / 2) * width) * PIXEL_SIZE;
         *p ++ = red;
         *p ++ = green;
@@ -98,14 +98,14 @@ int main()
     int result = 0;
     struct DOT dots[DOT_COUNT]; 
     unsigned width = WIDTH, height = HEIGHT, file_num;
-    png_byte rgb_data[PIXEL_SIZE * width * height];
+    uint8_t bitmap[PIXEL_SIZE * width * height];
     srand(time(0));
     init_random_dots(width, height, DOT_COUNT, dots);
     for(file_num = 0; !result && file_num < 30; file_num ++)
     {
-        erase(width, height, rgb_data, 64, 64, 64);
-        draw_dots(width, height, rgb_data, DOT_COUNT, dots, 255, 255, 255);
-        fwrite(rgb_data, sizeof(rgb_data), 1, stdout);
+        erase(width, height, bitmap, 64, 64, 64);
+        draw_dots(width, height, bitmap, DOT_COUNT, dots, 255, 255, 255);
+        fwrite(bitmap, sizeof(bitmap), 1, stdout);
         fflush(stdout);
         calc_dot_deltas(width, height, 75, DOT_COUNT, dots);
         qsort(dots, DOT_COUNT, sizeof(struct DOT), (int(*)(const void *, const void *))dot_sort_proc);
