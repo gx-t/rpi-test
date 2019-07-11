@@ -26,7 +26,7 @@ int main()
 	
 	while(running) {
 		int num_bytes = read(0, buff, sizeof(buff));
-		if(0 > num_bytes || num_bytes % sizeof(float))
+		if(0 >= num_bytes || num_bytes % sizeof(float))
 			break;
 
 		int i = num_bytes / sizeof(float);
