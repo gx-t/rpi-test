@@ -40,12 +40,7 @@ static void init_random_dots(unsigned width, unsigned height, unsigned count, st
     }
 }
 
-static void draw_dots(unsigned width
-        , unsigned height
-        , uint32_t* bitmap
-        , unsigned count
-        , struct DOT* dots
-        , uint32_t color)
+static void draw_dots(unsigned width, unsigned height, uint32_t* bitmap, unsigned count, struct DOT* dots, uint32_t color)
 {
     while(count --)
     {
