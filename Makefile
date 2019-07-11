@@ -50,6 +50,10 @@ rel: 00-rel 01-rel 02-rel 03-rel 04-rel 05-rel 06-rel 07-rel 08-rel 09-rel 10-re
 	$(CC) $(DEB) $(MFLAGS) -o 05-neon 05-neon.c
 05-rel:
 	$(CC) $(REL) $(MFLAGS) -o 05-neon 05-neon.c
+05-flac:
+	./05-neon | sox -r 48k -t f32 -c 1 - 05.flac
+05-ogg:
+	./05-neon | sox -r 48k -t f32 -c 1 - 05.ogg
 
 06-deb:
 	$(CC) $(DEB) $(MFLAGS) -o 06-fb 06-fb.c
@@ -126,7 +130,7 @@ rel: 00-rel 01-rel 02-rel 03-rel 04-rel 05-rel 06-rel 07-rel 08-rel 09-rel 10-re
 	$(CC) $(REL) -o 18-ffmpeg-evol 18-ffmpeg-evol.c
 
 clean:
-	rm -rf 00-mouse 01-keyboard 02-neon 03-camera 04-stream 05-neon 06-fb 07-chirp 08-resonance 09-noise 10-resonance 11-sweep 12-evol 13-lora-tx 14-lora-rx 15-udp 16-png-evol 17-raw-evol 18-ffmpeg-evol rm *.s rm *.mp4
+	rm -rf 00-mouse 01-keyboard 02-neon 03-camera 04-stream 05-neon 06-fb 07-chirp 08-resonance 09-noise 10-resonance 11-sweep 12-evol 13-lora-tx 14-lora-rx 15-udp 16-png-evol 17-raw-evol 18-ffmpeg-evol rm ./tags *.s rm *.mp4 *.flac *.ogg
 
 ctags:
 	ctags -R . /usr/include/ /opt/vc/include/ /usr/lib/gcc/arm-linux-gnueabihf/6/include

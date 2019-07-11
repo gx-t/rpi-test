@@ -8,7 +8,8 @@
 #define FREQ_F32(f_)	((f_) * 2 * PI / SAMP_RATE)
 
 int main() {
-	while(1) {
+    int bell_count = 3;
+	while(bell_count --) {
 
 		float32x4_t c = {0.33, 0.5, 0.33, 1}
 		, s = {0, 0, 0, 0}
