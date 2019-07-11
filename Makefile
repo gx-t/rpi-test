@@ -132,7 +132,7 @@ rel: 00-rel 01-rel 02-rel 03-rel 04-rel 05-rel 06-rel 07-rel 08-rel 09-rel 10-re
 clean:
 	rm -rf 00-mouse 01-keyboard 02-neon 03-camera 04-stream 05-neon 06-fb 07-chirp 08-resonance 09-noise 10-resonance 11-sweep 12-evol 13-lora-tx 14-lora-rx 15-udp 16-png-evol 17-raw-evol 18-ffmpeg-evol rm ./tags *.s rm *.mp4 *.flac *.ogg
 
-ctags:
+tags:
 	ctags -R . /usr/include/ /opt/vc/include/ /usr/lib/gcc/arm-linux-gnueabihf/6/include
 
 asm:
