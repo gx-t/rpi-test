@@ -101,7 +101,7 @@ static int run_ffmpeg()
             , "-c:v"
             , "libx264"
             , "-vf"
-            , "fps=25,format=yuv420p"
+            , "fps=30,format=yuv420p"
             , "18-out.mp4"
             , NULL
     };

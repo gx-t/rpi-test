@@ -115,14 +115,14 @@ rel: 00-rel 01-rel 02-rel 03-rel 04-rel 05-rel 06-rel 07-rel 08-rel 09-rel 10-re
 16-rel:
 	$(CC) $(REL) -o 16-png-evol 16-png-evol.c -lpng
 16-mp4:
-	./16-png-evol | ffmpeg -y -r 2 -i - -c:v libx264 -vf "fps=25,format=yuv420p" 16-out.mp4
+	./16-png-evol | ffmpeg -y -r 2 -i - -c:v libx264 -vf "fps=30,format=yuv420p" 16-out.mp4
 
 17-deb:
 	$(CC) $(DEB) -o 17-raw-evol 17-raw-evol.c
 17-rel:
 	$(CC) $(REL) -o 17-raw-evol 17-raw-evol.c
 17-mp4:
-	./17-raw-evol | ffmpeg -y -s 200x200 -pix_fmt rgba -f rawvideo -r 2 -i - -c:v libx264 -vf "fps=25,format=yuv420p" 17-out.mp4
+	./17-raw-evol | ffmpeg -y -s 200x200 -pix_fmt rgba -f rawvideo -r 2 -i - -c:v libx264 -vf "fps=30,format=yuv420p" 17-out.mp4
 
 18-deb:
 	$(CC) $(DEB) -o 18-ffmpeg-evol 18-ffmpeg-evol.c
