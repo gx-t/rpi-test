@@ -1,5 +1,5 @@
 #set ARM gcc compiler/cross-compiler
-MAKEFLAGS+=-j 19
+MAKEFLAGS+=-j 20
 CC=gcc
 DEB=-Wall -g
 REL=-Wall -O3 -s
@@ -12,9 +12,9 @@ else
     MFLAGS=
 endif
 
-deb: 00-deb 01-deb 02-deb 03-deb 04-deb 05-deb 06-deb 07-deb 08-deb 09-deb 10-deb 11-deb 12-deb 13-deb 14-deb 15-deb 16-deb 17-deb 18-deb
+deb: 00-deb 01-deb 02-deb 03-deb 04-deb 05-deb 06-deb 07-deb 08-deb 09-deb 10-deb 11-deb 12-deb 13-deb 14-deb 15-deb 16-deb 17-deb 18-deb 19-deb
 
-rel: 00-rel 01-rel 02-rel 03-rel 04-rel 05-rel 06-rel 07-rel 08-rel 09-rel 10-rel 11-rel 12-rel 13-rel 14-rel 15-rel 16-rel 17-rel 18-rel
+rel: 00-rel 01-rel 02-rel 03-rel 04-rel 05-rel 06-rel 07-rel 08-rel 09-rel 10-rel 11-rel 12-rel 13-rel 14-rel 15-rel 16-rel 17-rel 18-rel 19-rel
 
 00-deb:
 	$(CC) $(DEB) -o 00-mouse 00-mouse.c
@@ -129,8 +129,13 @@ rel: 00-rel 01-rel 02-rel 03-rel 04-rel 05-rel 06-rel 07-rel 08-rel 09-rel 10-re
 18-rel:
 	$(CC) $(REL) -o 18-ffmpeg-evol 18-ffmpeg-evol.c
 
+19-deb:
+	$(CC) $(DEB) -o 19-ring 19-ring.c
+19-rel:
+	$(CC) $(REL) -o 19-ring 19-ring.c
+
 clean:
-	rm -rf 00-mouse 01-keyboard 02-neon 03-camera 04-stream 05-neon 06-fb 07-chirp 08-resonance 09-noise 10-resonance 11-sweep 12-evol 13-lora-tx 14-lora-rx 15-udp 16-png-evol 17-raw-evol 18-ffmpeg-evol rm ./tags *.s rm *.mp4 *.flac *.ogg
+	rm -rf 00-mouse 01-keyboard 02-neon 03-camera 04-stream 05-neon 06-fb 07-chirp 08-resonance 09-noise 10-resonance 11-sweep 12-evol 13-lora-tx 14-lora-rx 15-udp 16-png-evol 17-raw-evol 18-ffmpeg-evol 19-ring rm ./tags *.s rm *.mp4 *.flac *.ogg
 
 tags:
 	ctags -R . /usr/include/ /opt/vc/include/ /usr/lib/gcc/arm-linux-gnueabihf/6/include
