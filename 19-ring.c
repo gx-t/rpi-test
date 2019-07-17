@@ -3,7 +3,7 @@
 #include <signal.h>
 
 #define PI              3.14159265358979323846
-#define SAMP_RATE       96000 //Fs = 48KHZ
+#define SAMP_RATE       96000 //Fs = 96KHZ
 #define BLOCK_SIZE      (SAMP_RATE / 10) //100 ms block
 #define FREQ_F32(f_)    ((f_) * 2 * PI / SAMP_RATE)
 
@@ -15,7 +15,7 @@ static void ctrl_c(int sig)
     signal(SIGINT, ctrl_c);
 }
 
-static void f1_tone()
+static void f0_tone()
 {
     float s0 = 0, c0 = 0.75, s1 = 0, c1 = 0.75, f0 = FREQ_F32(19900), f1 = FREQ_F32(20000), buff[BLOCK_SIZE];
     float* pp = 0;
@@ -54,18 +54,68 @@ static void f1_tone()
     }
 }
 
+static void f1_tone()
+{
+    float s0, c0, s1, c1, f0, f1, a, buff[BLOCK_SIZE], *pp = buff;
+    int i = 0;
+
+    s0 = 0, c0 = 0.75, s1 = 0, c1 = 0.75, f0 = FREQ_F32(11950), f1 = FREQ_F32(12000);
+    a = 1.0;
+
+    while(a > 0.1) {
+        i = BLOCK_SIZE;
+        pp = buff;
+
+        while(i --) {
+
+            c0 += s0 * f0;
+            s0 -= c0 * f0;
+
+            c1 += s1 * f1;
+            s1 -= c1 * f1;
+
+            *pp ++ = (s0 + s1) * a / 2;
+            a /= 1.00005;
+        }
+        if(sizeof(buff) != write(1, buff, sizeof(buff)))
+            break;
+    }
+
+    s0 = 0, c0 = 0.75, s1 = 0, c1 = 0.75, f0 = FREQ_F32(9950), f1 = FREQ_F32(10000);
+    a = 1.0;
+
+    while(a > 0.1) {
+        i = BLOCK_SIZE;
+        pp = buff;
+
+        while(i --) {
+
+            c0 += s0 * f0;
+            s0 -= c0 * f0;
+
+            c1 += s1 * f1;
+            s1 -= c1 * f1;
+
+            *pp ++ = (s0 + s1) * a / 2;
+            a /= 1.00005;
+        }
+        if(sizeof(buff) != write(1, buff, sizeof(buff)))
+            break;
+    }
+}
+
 int main(int argc, char* argv[])
 {
-    void (*f_arr[])() = {f1_tone};
+    void (*f_arr[])() = {f0_tone, f1_tone};
     signal(SIGINT, ctrl_c);
     if(2 != argc) {
-        fprintf(stderr, "Usage: %s 0\n", *argv);
+        fprintf(stderr, "Usage: %s [0-1]\n", *argv);
         return 1;
     }
     argv ++;
     int f_idx = **argv - '0';
-    if(0 > f_idx || 0 < f_idx) {
-        fprintf(stderr, "Unknown tone: %s\n", *argv);
+    if(0 > f_idx || sizeof(f_arr) / sizeof(f_arr[0]) - 1 < f_idx) {
+        fprintf(stderr, "Unknown tone: %c\n", **argv);
         return 2;
     }
     f_arr[f_idx]();
