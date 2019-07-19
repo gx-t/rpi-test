@@ -17,9 +17,11 @@ static void ctrl_c(int sig)
 
 static void f0_tone()
 {
-    float s0 = 0, c0 = 0.75, s1 = 0, c1 = 0.75, f0 = FREQ_F32(19900), f1 = FREQ_F32(20000), buff[BLOCK_SIZE];
+    float s0 = 0, c0 = 0.75, f0 = FREQ_F32(19900), s1 = 0
+        , c1 = 0.75, f1 = FREQ_F32(20000), buff[BLOCK_SIZE];
     float* pp = 0;
     int i = 0;
+
     while(running && f0 > FREQ_F32(3100)) {
         i = BLOCK_SIZE;
         pp = buff;
@@ -56,10 +58,11 @@ static void f0_tone()
 
 static void f1_tone()
 {
-    float s0, c0, s1, c1, f0, f1, a, buff[BLOCK_SIZE], *pp = buff;
+    float s0, c0, f0
+        , s1, c1, f1, a, buff[BLOCK_SIZE], *pp = buff;
     int i = 0;
 
-    s0 = 0, c0 = 0.75, s1 = 0, c1 = 0.75, f0 = FREQ_F32(11950), f1 = FREQ_F32(12000);
+    s0 = 0, c0 = 0.75, f0 = FREQ_F32(11950), s1 = 0, c1 = 0.75, f1 = FREQ_F32(12000);
     a = 1.0;
 
     while(a > 0.1) {
@@ -104,12 +107,61 @@ static void f1_tone()
     }
 }
 
+static void f2_tone()
+{
+    float s0, c0, f0, a, buff[BLOCK_SIZE], *pp = buff;
+    int i = 0, count = 0;
+
+    s0 = 0, c0 = 0.75, f0 = FREQ_F32(7902.133); //B8
+
+    for(count = 0; count < 30; count ++) {
+        a = 1.0;
+        i = BLOCK_SIZE;
+        pp = buff;
+
+        while(i --) {
+
+            c0 += s0 * f0;
+            s0 -= c0 * f0;
+
+            *pp ++ = s0 * a;
+            a /= 1.0003;
+        }
+        if(sizeof(buff) != write(1, buff, sizeof(buff)))
+            break;
+    }
+}
+
+static void f3_tone()
+{
+    float s0, c0, f0, buff[BLOCK_SIZE], *pp = buff;
+    int i = 0, count = 0;
+
+
+    for(count = 0; count < 30; count ++) {
+        s0 = 0, c0 = 0.75, f0 = FREQ_F32(3951.066);
+        i = BLOCK_SIZE;
+        pp = buff;
+
+        while(i --) {
+
+            c0 += s0 * f0;
+            s0 -= c0 * f0;
+
+            *pp ++ = s0;
+            f0 *= 1.0001;
+        }
+        if(sizeof(buff) != write(1, buff, sizeof(buff)))
+            break;
+    }
+}
+
 int main(int argc, char* argv[])
 {
-    void (*f_arr[])() = {f0_tone, f1_tone};
+    void (*f_arr[])() = {f0_tone, f1_tone, f2_tone, f3_tone};
     signal(SIGINT, ctrl_c);
     if(2 != argc) {
-        fprintf(stderr, "Usage: %s [0-1]\n", *argv);
+        fprintf(stderr, "Usage: %s [0-3]\n", *argv);
         return 1;
     }
     argv ++;
