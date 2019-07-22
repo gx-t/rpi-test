@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <signal.h>
+#include <arm_neon.h>
 
 #define PI              3.14159265358979323846
 #define SAMP_RATE       96000 //Fs = 96KHZ
@@ -17,39 +18,37 @@ static void ctrl_c(int sig)
 
 static void f0_tone()
 {
-    float s0 = 0, c0 = 0.75, f0 = FREQ_F32(19900), s1 = 0
-        , c1 = 0.75, f1 = FREQ_F32(20000), buff[BLOCK_SIZE];
-    float* pp = 0;
-    int i = 0;
+	register float32x2_t c = {0.75, 0.75};
+	register float32x2_t s = {0.0, 0.0};
+	register float32x2_t f = {FREQ_F32(19900), FREQ_F32(20000)};
+    register const float32x2_t k_down = {1.00001, 1.00001};
+    register const float32x2_t k_up = {1.00002, 1.00002};
+    float  buff[BLOCK_SIZE], *pp;
+    int i;
 
-    while(running && f0 > FREQ_F32(3100)) {
+    while(running && f[0] > FREQ_F32(3100)) {
         i = BLOCK_SIZE;
         pp = buff;
 
         while(i--) {
-            c0 += s0 * f0;
-            s0 -= c0 * f0;
-            c1 += s1 * f1;
-            s1 -= c1 * f1;
-            *pp ++ = ((s0 + s1) / 2);
-            f0 /= 1.00001;
-            f1 /= 1.00001;
+            c += s * f;
+            s -= c * f;
+            *pp ++ = ((s[0] + s[1]) / 2);
+            f /= k_down;
         }
         if(sizeof(buff) != write(1, buff, sizeof(buff)))
             break;
     }
-    while(running && f0 < FREQ_F32(19900)) {
+
+    while(running && f[0] < FREQ_F32(19900)) {
         i = BLOCK_SIZE;
         pp = buff;
 
         while(i--) {
-            c0 += s0 * f0;
-            s0 -= c0 * f0;
-            c1 += s1 * f1;
-            s1 -= c1 * f1;
-            *pp ++ = ((s0 + s1) / 2);
-            f0 *= 1.00002;
-            f1 *= 1.00002;
+            c += s * f;
+            s -= c * f;
+            *pp ++ = ((s[0] + s[1]) / 2);
+            f *= k_up;
         }
         if(sizeof(buff) != write(1, buff, sizeof(buff)))
             break;
@@ -58,11 +57,12 @@ static void f0_tone()
 
 static void f1_tone()
 {
-    float s0, c0, f0
-        , s1, c1, f1, a, buff[BLOCK_SIZE], *pp = buff;
+	register float32x2_t c = {0.75, 0.75};
+	register float32x2_t s = {0.0, 0.0};
+	register float32x2_t f = {FREQ_F32(11950), FREQ_F32(12000)};
+    float buff[BLOCK_SIZE], *pp, a;
     int i = 0;
 
-    s0 = 0, c0 = 0.75, f0 = FREQ_F32(11950), s1 = 0, c1 = 0.75, f1 = FREQ_F32(12000);
     a = 1.0;
 
     while(a > 0.1) {
@@ -70,21 +70,20 @@ static void f1_tone()
         pp = buff;
 
         while(i --) {
+            c += s * f;
+            s -= c * f;
 
-            c0 += s0 * f0;
-            s0 -= c0 * f0;
-
-            c1 += s1 * f1;
-            s1 -= c1 * f1;
-
-            *pp ++ = (s0 + s1) * a / 2;
+            *pp ++ = (s[0] + s[1]) * a / 2;
             a /= 1.00005;
         }
         if(sizeof(buff) != write(1, buff, sizeof(buff)))
             break;
     }
 
-    s0 = 0, c0 = 0.75, s1 = 0, c1 = 0.75, f0 = FREQ_F32(9950), f1 = FREQ_F32(10000);
+    s[1] = s[0] = 0.0;
+    c[1] = c[0] = 0.75;
+    f[0] = FREQ_F32(9950);
+    f[1] = FREQ_F32(10000);
     a = 1.0;
 
     while(a > 0.1) {
@@ -92,14 +91,10 @@ static void f1_tone()
         pp = buff;
 
         while(i --) {
+            c += s * f;
+            s -= c * f;
 
-            c0 += s0 * f0;
-            s0 -= c0 * f0;
-
-            c1 += s1 * f1;
-            s1 -= c1 * f1;
-
-            *pp ++ = (s0 + s1) * a / 2;
+            *pp ++ = (s[0] + s[1]) * a / 2;
             a /= 1.00005;
         }
         if(sizeof(buff) != write(1, buff, sizeof(buff)))
@@ -158,36 +153,54 @@ static void f3_tone()
     }
 }
 
-//static void f3_tone()
-//{
-//    float s0, c0, f0, buff[BLOCK_SIZE], *pp = buff;
-//    int i = 0, count = 0;
-//
-//
-//    for(count = 0; count < 30; count ++) {
-//        s0 = 0, c0 = 0.75, f0 = FREQ_F32(3951.066);
-//        i = BLOCK_SIZE;
-//        pp = buff;
-//
-//        while(i --) {
-//
-//            c0 += s0 * f0;
-//            s0 -= c0 * f0;
-//
-//            *pp ++ = s0;
-//            f0 *= 1.0001;
-//        }
-//        if(sizeof(buff) != write(1, buff, sizeof(buff)))
-//            break;
-//    }
-//}
-//
+static void f4_tone()
+{
+	register float32x2_t c = {0.75, 0.75};
+	register float32x2_t s = {0.0, 0.0};
+	register float32x2_t f = {FREQ_F32(2900.0), FREQ_F32(10.0)};
+
+    float buff[BLOCK_SIZE], *pp = buff;
+    int i, count;
+
+    for(count = 0; count < 10; count ++) {
+        pp = buff;
+        i = BLOCK_SIZE;
+        while(i --) {
+            c += s * f;
+            s -= c * f;
+            *pp ++ = s[0] * s[1];
+        }
+
+        if(sizeof(buff) != write(1, buff, sizeof(buff)))
+            break;
+    }
+    for(count = 0; count < 10; count ++) {
+        pp = buff;
+        i = BLOCK_SIZE / 2;
+        while(i --) {
+            c += s * f;
+            s -= c * f;
+            *pp ++ = s[0] * s[1];
+            s[1] /= 1.0004;
+        }
+        i = BLOCK_SIZE / 2;
+        while(i --) {
+            c += s * f;
+            s -= c * f;
+            *pp ++ = s[0] * s[1];
+        }
+
+        if(sizeof(buff) != write(1, buff, sizeof(buff)))
+            break;
+    }
+}
+
 int main(int argc, char* argv[])
 {
-    void (*f_arr[])() = {f0_tone, f1_tone, f2_tone, f3_tone};
+    void (*f_arr[])() = {f0_tone, f1_tone, f2_tone, f3_tone, f4_tone};
     signal(SIGINT, ctrl_c);
     if(2 != argc) {
-        fprintf(stderr, "Usage: %s [0-3]\n", *argv);
+        fprintf(stderr, "Usage: %s [0-4]\n", *argv);
         return 1;
     }
     argv ++;
