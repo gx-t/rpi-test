@@ -134,12 +134,13 @@ static void f2_tone()
 
 static void f3_tone()
 {
-    float s0, c0, f0, buff[BLOCK_SIZE], *pp = buff;
+    float s0, c0, f0, a, buff[BLOCK_SIZE], *pp = buff;
     int i = 0, count = 0;
 
+    s0 = 0, c0 = 0.75, f0 = FREQ_F32(3520.000);
 
     for(count = 0; count < 30; count ++) {
-        s0 = 0, c0 = 0.75, f0 = FREQ_F32(3951.066);
+        a = 1.0;
         i = BLOCK_SIZE;
         pp = buff;
 
@@ -148,14 +149,39 @@ static void f3_tone()
             c0 += s0 * f0;
             s0 -= c0 * f0;
 
-            *pp ++ = s0;
-            f0 *= 1.0001;
+            *pp ++ = s0 * a;
+            a /= 1.0003;
         }
+        f0 *= 1.04;
         if(sizeof(buff) != write(1, buff, sizeof(buff)))
             break;
     }
 }
 
+//static void f3_tone()
+//{
+//    float s0, c0, f0, buff[BLOCK_SIZE], *pp = buff;
+//    int i = 0, count = 0;
+//
+//
+//    for(count = 0; count < 30; count ++) {
+//        s0 = 0, c0 = 0.75, f0 = FREQ_F32(3951.066);
+//        i = BLOCK_SIZE;
+//        pp = buff;
+//
+//        while(i --) {
+//
+//            c0 += s0 * f0;
+//            s0 -= c0 * f0;
+//
+//            *pp ++ = s0;
+//            f0 *= 1.0001;
+//        }
+//        if(sizeof(buff) != write(1, buff, sizeof(buff)))
+//            break;
+//    }
+//}
+//
 int main(int argc, char* argv[])
 {
     void (*f_arr[])() = {f0_tone, f1_tone, f2_tone, f3_tone};
