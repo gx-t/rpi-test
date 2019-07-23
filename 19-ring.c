@@ -57,15 +57,14 @@ static void f0_tone()
 
 static void f1_tone()
 {
-	register float32x2_t c = {0.75, 0.75};
-	register float32x2_t s = {0.0, 0.0};
-	register float32x2_t f = {FREQ_F32(11950), FREQ_F32(12000)};
-    float buff[BLOCK_SIZE], *pp, a;
-    int i = 0;
+	register float32x4_t c = {0.75, 0.75, 0.0, 0.0};
+	register float32x4_t s = {0.0, 0.0, 0.0, 0.0};
+	register float32x4_t f = {FREQ_F32(2093.005), FREQ_F32(2637.020), FREQ_F32(1975.533), FREQ_F32(2349.318)};
+	register float32x4_t d = {1.00004, 1.00004, 1.00004, 1.00004};
+    float buff[BLOCK_SIZE], *pp;
+    int i = 0, cnt = 5;
 
-    a = 1.0;
-
-    while(a > 0.1) {
+    while(cnt --) {
         i = BLOCK_SIZE;
         pp = buff;
 
@@ -73,20 +72,18 @@ static void f1_tone()
             c += s * f;
             s -= c * f;
 
-            *pp ++ = (s[0] + s[1]) * a / 2;
-            a /= 1.00005;
+            *pp ++ = (s[0] + s[1] + s[2] + s[3]) / 4;
+            s /= d;
         }
         if(sizeof(buff) != write(1, buff, sizeof(buff)))
             break;
     }
 
-    s[1] = s[0] = 0.0;
-    c[1] = c[0] = 0.75;
-    f[0] = FREQ_F32(9950);
-    f[1] = FREQ_F32(10000);
-    a = 1.0;
+    s[3] = s[2] = 0.0;
+    c[3] = c[2] = 0.75;
 
-    while(a > 0.1) {
+    cnt = 15;
+    while(cnt --) {
         i = BLOCK_SIZE;
         pp = buff;
 
@@ -94,8 +91,8 @@ static void f1_tone()
             c += s * f;
             s -= c * f;
 
-            *pp ++ = (s[0] + s[1]) * a / 2;
-            a /= 1.00005;
+            *pp ++ = (s[0] + s[1] + s[2] + s[3]) / 4;
+            s /= d;
         }
         if(sizeof(buff) != write(1, buff, sizeof(buff)))
             break;
