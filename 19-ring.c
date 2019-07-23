@@ -59,7 +59,7 @@ static void f1_tone()
 {
 	register float32x4_t c = {0.75, 0.75, 0.0, 0.0};
 	register float32x4_t s = {0.0, 0.0, 0.0, 0.0};
-	register float32x4_t f = {FREQ_F32(2093.005), FREQ_F32(2637.020), FREQ_F32(1975.533), FREQ_F32(2349.318)};
+	register float32x4_t f = {FREQ_F32(2093.005), FREQ_F32(2637.020), FREQ_F32(1864.655), FREQ_F32(2349.318)};
 	register float32x4_t d = {1.00004, 1.00004, 1.00004, 1.00004};
     float buff[BLOCK_SIZE], *pp;
     int i = 0, cnt = 5;
