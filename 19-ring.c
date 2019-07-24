@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <signal.h>
-#include <arm_neon.h>
 
 #define PI              3.14159265358979323846
 #define SAMP_RATE       96000 //Fs = 96KHZ
@@ -16,13 +15,61 @@ static void ctrl_c(int sig)
     signal(SIGINT, ctrl_c);
 }
 
+static float f_vmlasr_f32(float c[], float s[], const float f[], int cnt)
+{
+    float sum = 0;
+    int i;
+
+    for(i = 0; i < cnt; i ++)
+        c[i] += s[i] * f[i];
+
+    for(i = 0; i < cnt; i ++)
+        s[i] -= c[i] * f[i];
+
+    for(i = 0; i < cnt; i ++)
+        sum += s[i];
+
+    return sum / (float)cnt;
+}
+
+static float f_vmlasm_f32(float c[], float s[], const float f[], int cnt)
+{
+    float mul = 1.0;
+    int i;
+
+    for(i = 0; i < cnt; i ++)
+        c[i] += s[i] * f[i];
+
+    for(i = 0; i < cnt; i ++)
+        s[i] -= c[i] * f[i];
+
+    for(i = 0; i < cnt; i ++)
+        mul *= s[i];
+
+    return mul;
+}
+
+static void f_vdiv_f32(float dst[], const float op1[], const float op2[], int cnt)
+{
+    int i;
+    for(i = 0; i < cnt; i ++)
+        dst[i] = op1[i] / op2[i];
+}
+
+static void f_vmul_f32(float dst[], const float op1[], const float op2[], int cnt)
+{
+    int i;
+    for(i = 0; i < cnt; i ++)
+        dst[i] = op1[i] * op2[i];
+}
+
 static void f0_tone()
 {
-    register float32x2_t c = {0.75, 0.75};
-    register float32x2_t s = {0.0, 0.0};
-    register float32x2_t f = {FREQ_F32(19900), FREQ_F32(20000)};
-    register const float32x2_t k_down = {1.00001, 1.00001};
-    register const float32x2_t k_up = {1.00002, 1.00002};
+    float c[2] = {0.75, 0.75};
+    float s[2] = {0.0, 0.0};
+    float f[2] = {FREQ_F32(19900), FREQ_F32(20000)};
+    const float k_down[2] = {1.00001, 1.00001};
+    const float k_up[2] = {1.00002, 1.00002};
     float  buff[BLOCK_SIZE], *pp;
     int i;
 
@@ -31,10 +78,8 @@ static void f0_tone()
         pp = buff;
 
         while(i--) {
-            c += s * f;
-            s -= c * f;
-            *pp ++ = ((s[0] + s[1]) / 2);
-            f /= k_down;
+            *pp ++ = f_vmlasr_f32(c, s, f, 2);
+            f_vdiv_f32(f, f, k_down, 2);
         }
         if(sizeof(buff) != write(1, buff, sizeof(buff)))
             break;
@@ -45,10 +90,8 @@ static void f0_tone()
         pp = buff;
 
         while(i--) {
-            c += s * f;
-            s -= c * f;
-            *pp ++ = ((s[0] + s[1]) / 2);
-            f *= k_up;
+            *pp ++ = f_vmlasr_f32(c, s, f, 2);
+            f_vmul_f32(f, f, k_up, 2);
         }
         if(sizeof(buff) != write(1, buff, sizeof(buff)))
             break;
@@ -57,10 +100,10 @@ static void f0_tone()
 
 static void f1_tone()
 {
-    register float32x4_t c = {0.75, 0.75, 0.0, 0.0};
-    register float32x4_t s = {0.0, 0.0, 0.0, 0.0};
-    register float32x4_t f = {FREQ_F32(2093.005), FREQ_F32(2637.020), FREQ_F32(1864.655), FREQ_F32(2349.318)};
-    register float32x4_t d = {1.00004, 1.00004, 1.00004, 1.00004};
+    float c[4] = {0.75, 0.75, 0.0, 0.0};
+    float s[4] = {0.0, 0.0, 0.0, 0.0};
+    float f[4] = {FREQ_F32(2093.005), FREQ_F32(2637.020), FREQ_F32(1864.655), FREQ_F32(2349.318)};
+    float d[4] = {1.00004, 1.00004, 1.00004, 1.00004};
     float buff[BLOCK_SIZE], *pp;
     int i = 0, cnt = 5;
 
@@ -69,11 +112,8 @@ static void f1_tone()
         pp = buff;
 
         while(i --) {
-            c += s * f;
-            s -= c * f;
-
-            *pp ++ = (s[0] + s[1] + s[2] + s[3]) / 4;
-            s /= d;
+            *pp ++ = f_vmlasr_f32(c, s, f, 4);
+            f_vdiv_f32(s, s, d, 4);
         }
         if(sizeof(buff) != write(1, buff, sizeof(buff)))
             break;
@@ -88,11 +128,8 @@ static void f1_tone()
         pp = buff;
 
         while(i --) {
-            c += s * f;
-            s -= c * f;
-
-            *pp ++ = (s[0] + s[1] + s[2] + s[3]) / 4;
-            s /= d;
+            *pp ++ = f_vmlasr_f32(c, s, f, 4);
+            f_vdiv_f32(s, s, d, 4);
         }
         if(sizeof(buff) != write(1, buff, sizeof(buff)))
             break;
@@ -113,10 +150,7 @@ static void f2_tone()
 
         while(i --) {
 
-            c0 += s0 * f0;
-            s0 -= c0 * f0;
-
-            *pp ++ = s0 * a;
+            *pp ++ = f_vmlasr_f32(&c0, &s0, &f0, 1) * a;
             a /= 1.0003;
         }
         if(sizeof(buff) != write(1, buff, sizeof(buff)))
@@ -152,9 +186,9 @@ static void f3_tone()
 
 static void f4_tone()
 {
-    register float32x2_t c = {0.75, 0.75};
-    register float32x2_t s = {0.0, 0.0};
-    register float32x2_t f = {FREQ_F32(2900.0), FREQ_F32(10.0)};
+    float c[2] = {0.75, 0.75};
+    float s[2] = {0.0, 0.0};
+    float f[2] = {FREQ_F32(2900.0), FREQ_F32(10.0)};
 
     float buff[BLOCK_SIZE], *pp = buff;
     int i, count;
@@ -162,11 +196,8 @@ static void f4_tone()
     for(count = 0; count < 10; count ++) {
         pp = buff;
         i = BLOCK_SIZE;
-        while(i --) {
-            c += s * f;
-            s -= c * f;
-            *pp ++ = s[0] * s[1];
-        }
+        while(i --)
+            *pp ++ = f_vmlasm_f32(c, s, f, 2);
 
         if(sizeof(buff) != write(1, buff, sizeof(buff)))
             break;
@@ -175,16 +206,12 @@ static void f4_tone()
         pp = buff;
         i = BLOCK_SIZE / 2;
         while(i --) {
-            c += s * f;
-            s -= c * f;
-            *pp ++ = s[0] * s[1];
+            *pp ++ = f_vmlasm_f32(c, s, f, 2);
             s[1] /= 1.0004;
         }
         i = BLOCK_SIZE / 2;
         while(i --) {
-            c += s * f;
-            s -= c * f;
-            *pp ++ = s[0] * s[1];
+            *pp ++ = f_vmlasm_f32(c, s, f, 2);
         }
 
         if(sizeof(buff) != write(1, buff, sizeof(buff)))
@@ -194,12 +221,12 @@ static void f4_tone()
 
 static void f5_tone()
 {
-    register float32x4_t c0 = {0.5, 0.25, 0.125, 0.0625};
-    register float32x4_t s0 = {0.0, 0.0, 0.0, 0.0};
-    register float32x4_t f0 = {FREQ_F32(2093.005), FREQ_F32(4186.01), FREQ_F32(6279.015), FREQ_F32(8372.02)};
-    register float32x4_t c1 = {0.5, 0.166667, 0.1, 0.071428571};
-    register float32x4_t s1 = {0.0, 0.0, 0.0, 0.0};
-    register float32x4_t f1 = {FREQ_F32(2093.005), FREQ_F32(6279.015), FREQ_F32(10465.025), FREQ_F32(14651.035)};
+    float c0[4] = {0.5, 0.25, 0.125, 0.0625};
+    float s0[4] = {0.0, 0.0, 0.0, 0.0};
+    float f0[4] = {FREQ_F32(2093.005), FREQ_F32(4186.01), FREQ_F32(6279.015), FREQ_F32(8372.02)};
+    float c1[4] = {0.5, 0.166667, 0.1, 0.071428571};
+    float s1[4] = {0.0, 0.0, 0.0, 0.0};
+    float f1[4] = {FREQ_F32(2093.005), FREQ_F32(6279.015), FREQ_F32(10465.025), FREQ_F32(14651.035)};
     float buff[BLOCK_SIZE], *pp;
     int i = 0, cnt = 30;
 
@@ -207,12 +234,9 @@ static void f5_tone()
         i = BLOCK_SIZE;
         pp = buff;
 
-        while(i --) {
-            c0 += s0 * f0;
-            s0 -= c0 * f0;
+        while(i --)
+            *pp ++ = f_vmlasr_f32(c0, s0, f0, 4);
 
-            *pp ++ = (s0[0] + s0[1] + s0[2] + s0[3]) / 4;
-        }
         if(sizeof(buff) != write(1, buff, sizeof(buff)))
             break;
     }
@@ -222,12 +246,9 @@ static void f5_tone()
         i = BLOCK_SIZE;
         pp = buff;
 
-        while(i --) {
-            c1 += s1 * f1;
-            s1 -= c1 * f1;
+        while(i --)
+            *pp ++ = f_vmlasr_f32(c1, s1, f1, 4);
 
-            *pp ++ = (s1[0] + s1[1] + s1[2] + s1[3]) / 4;
-        }
         if(sizeof(buff) != write(1, buff, sizeof(buff)))
             break;
     }
@@ -245,7 +266,7 @@ int main(int argc, char* argv[])
     void (*f_arr[])() = {f0_tone, f1_tone, f2_tone, f3_tone, f4_tone, f5_tone};
     signal(SIGINT, ctrl_c);
     if(2 != argc) {
-        show_usage(*argv, sizeof(f_arr[0]) - 1);
+        show_usage(*argv, sizeof(f_arr) / sizeof(f_arr[0]) - 1);
         return 1;
     }
     argv ++;
