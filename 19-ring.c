@@ -20,14 +20,11 @@ static float f_vmlasr_f32(float c[], float s[], const float f[], int cnt)
     float sum = 0;
     int i;
 
-    for(i = 0; i < cnt; i ++)
+    for(i = 0; i < cnt; i ++) {
         c[i] += s[i] * f[i];
-
-    for(i = 0; i < cnt; i ++)
         s[i] -= c[i] * f[i];
-
-    for(i = 0; i < cnt; i ++)
         sum += s[i];
+    }
 
     return sum / (float)cnt;
 }
@@ -37,14 +34,11 @@ static float f_vmlasm_f32(float c[], float s[], const float f[], int cnt)
     float mul = 1.0;
     int i;
 
-    for(i = 0; i < cnt; i ++)
+    for(i = 0; i < cnt; i ++) {
         c[i] += s[i] * f[i];
-
-    for(i = 0; i < cnt; i ++)
         s[i] -= c[i] * f[i];
-
-    for(i = 0; i < cnt; i ++)
         mul *= s[i];
+    }
 
     return mul;
 }
