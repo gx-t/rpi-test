@@ -6,6 +6,7 @@
 #define SAMP_RATE       96000 //Fs = 96KHZ
 #define BLOCK_SIZE      (SAMP_RATE / 10) //100 ms block
 #define FREQ_F32(f_)    ((f_) * 2 * PI / SAMP_RATE)
+#define NOTE_CNT        84
 
 static int running = 1;
 
@@ -29,7 +30,7 @@ static float f_vmlasr_f32(float c[], float s[], const float f[], int cnt)
     return sum / (float)cnt;
 }
 
-static float f_vmlasm_f32(float c[], float s[], const float f[], int cnt)
+static float f_vmlamr_f32(float c[], float s[], const float f[], int cnt)
 {
     float mul = 1.0;
     int i;
@@ -55,6 +56,17 @@ static void f_vmul_f32(float dst[], const float op1[], const float op2[], int cn
     int i;
     for(i = 0; i < cnt; i ++)
         dst[i] = op1[i] * op2[i];
+}
+
+static void f_fill_all_notes(float s[], float c[], float q[], float f[])
+{
+    int i;
+    float f0;
+    for(i = 0, f0 = 32.70320; i < NOTE_CNT; i ++, f0 *= 1.0594630943592953) {
+        s[i] = c[i] = 0.0;
+        q[i] = 1.0001;
+        f[i] = FREQ_F32(f0);
+    }
 }
 
 static void f0_tone()
@@ -191,7 +203,7 @@ static void f4_tone()
         pp = buff;
         i = BLOCK_SIZE;
         while(i --)
-            *pp ++ = f_vmlasm_f32(c, s, f, 2);
+            *pp ++ = f_vmlamr_f32(c, s, f, 2);
 
         if(sizeof(buff) != write(1, buff, sizeof(buff)))
             break;
@@ -200,12 +212,12 @@ static void f4_tone()
         pp = buff;
         i = BLOCK_SIZE / 2;
         while(i --) {
-            *pp ++ = f_vmlasm_f32(c, s, f, 2);
+            *pp ++ = f_vmlamr_f32(c, s, f, 2);
             s[1] /= 1.0004;
         }
         i = BLOCK_SIZE / 2;
         while(i --) {
-            *pp ++ = f_vmlasm_f32(c, s, f, 2);
+            *pp ++ = f_vmlamr_f32(c, s, f, 2);
         }
 
         if(sizeof(buff) != write(1, buff, sizeof(buff)))
@@ -215,33 +227,19 @@ static void f4_tone()
 
 static void f5_tone()
 {
-    float c0[4] = {0.5, 0.25, 0.125, 0.0625};
-    float s0[4] = {0.0, 0.0, 0.0, 0.0};
-    float f0[4] = {FREQ_F32(2093.005), FREQ_F32(4186.01), FREQ_F32(6279.015), FREQ_F32(8372.02)};
-    float c1[4] = {0.5, 0.166667, 0.1, 0.071428571};
-    float s1[4] = {0.0, 0.0, 0.0, 0.0};
-    float f1[4] = {FREQ_F32(2093.005), FREQ_F32(6279.015), FREQ_F32(10465.025), FREQ_F32(14651.035)};
-    float buff[BLOCK_SIZE], *pp;
-    int i = 0, cnt = 30;
+    float c[NOTE_CNT], s[NOTE_CNT], f[NOTE_CNT], q[NOTE_CNT], buff[BLOCK_SIZE], *pp;
+    int i, note_idx;
 
-    while(cnt --) {
-        i = BLOCK_SIZE;
+    f_fill_all_notes(c, s, q, f);
+
+    for(note_idx = 0; note_idx < NOTE_CNT; note_idx ++) {
+
+        s[note_idx] = 10;
         pp = buff;
-
-        while(i --)
-            *pp ++ = f_vmlasr_f32(c0, s0, f0, 4);
-
-        if(sizeof(buff) != write(1, buff, sizeof(buff)))
-            break;
-    }
-
-    cnt = 30;
-    while(cnt --) {
-        i = BLOCK_SIZE;
-        pp = buff;
-
-        while(i --)
-            *pp ++ = f_vmlasr_f32(c1, s1, f1, 4);
+        for(i = 0; i < BLOCK_SIZE; i ++) {
+            *pp ++ = f_vmlasr_f32(c, s, f, NOTE_CNT);
+            f_vdiv_f32(s, s, q, NOTE_CNT);
+        }
 
         if(sizeof(buff) != write(1, buff, sizeof(buff)))
             break;
