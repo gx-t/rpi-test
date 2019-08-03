@@ -55,9 +55,9 @@ flac: 19-flac
 05-rel:
 	$(CC) $(REL) $(MFLAGS) -o 05-neon 05-neon.c
 05-flac:
-	./05-neon | sox -r 48k -t f32 -c 1 - 05.flac
+	./05-neon | sox -r 48k -t f32 -c 1 - flac/05.flac
 05-ogg:
-	./05-neon | sox -r 48k -t f32 -c 1 - 05.ogg
+	./05-neon | sox -r 48k -t f32 -c 1 - ogg/05.ogg
 
 06-deb:
 	$(CC) $(DEB) $(MFLAGS) -o 06-fb 06-fb.c
@@ -121,7 +121,7 @@ flac: 19-flac
 16-png-evol: 16-png-evol.c
 	$(CC) $(REL) -o 16-png-evol 16-png-evol.c -lpng
 16-mp4: 16-png-evol
-	./16-png-evol | ffmpeg -y -r 2 -i - -c:v libx264 -vf "fps=30,format=yuv420p" 16-out.mp4
+	./16-png-evol | ffmpeg -y -r 2 -i - -c:v libx264 -vf "fps=30,format=yuv420p" mp4/16-out.mp4
 
 17-deb:
 	$(CC) $(DEB) -o 17-raw-evol 17-raw-evol.c
@@ -130,7 +130,7 @@ flac: 19-flac
 17-raw-evol: 17-raw-evol.c
 	$(CC) $(REL) -o 17-raw-evol 17-raw-evol.c
 17-mp4: 17-raw-evol
-	./17-raw-evol | ffmpeg -y -s 200x200 -pix_fmt rgba -f rawvideo -r 2 -i - -c:v libx264 -vf "fps=30,format=yuv420p" 17-out.mp4
+	./17-raw-evol | ffmpeg -y -s 200x200 -pix_fmt rgba -f rawvideo -r 2 -i - -c:v libx264 -vf "fps=30,format=yuv420p" mp4/17-out.mp4
 
 18-deb:
 	$(CC) $(DEB) -o 18-ffmpeg-evol 18-ffmpeg-evol.c
@@ -139,7 +139,7 @@ flac: 19-flac
 18-ffmpeg-evol: 18-ffmpeg-evol.c
 	$(CC) $(REL) -o 18-ffmpeg-evol 18-ffmpeg-evol.c
 18-mp4: 18-ffmpeg-evol
-	./18-ffmpeg-evol
+	cd mp4 && ../18-ffmpeg-evol
 
 19-deb:
 	$(CC) $(DEB) -o 19-ring 19-ring.c
@@ -151,20 +151,20 @@ flac: 19-flac
 19-flac: 19-0 19-1 19-2 19-3 19-4 19-5
 
 19-0: 19-ring
-	./19-ring 0 | sox -r 96k -t f32 -c 1 - 19-0.flac
+	./19-ring 0 | sox -r 96k -t f32 -c 1 - flac/19-0.flac
 19-1: 19-ring
-	./19-ring 1 | sox -r 96k -t f32 -c 1 - 19-1.flac
+	./19-ring 1 | sox -r 96k -t f32 -c 1 - flac/19-1.flac
 19-2: 19-ring
-	./19-ring 2 | sox -r 96k -t f32 -c 1 - 19-2.flac
+	./19-ring 2 | sox -r 96k -t f32 -c 1 - flac/19-2.flac
 19-3: 19-ring
-	./19-ring 3 | sox -r 96k -t f32 -c 1 - 19-3.flac
+	./19-ring 3 | sox -r 96k -t f32 -c 1 - flac/19-3.flac
 19-4: 19-ring
-	./19-ring 4 | sox -r 96k -t f32 -c 1 - 19-4.flac
+	./19-ring 4 | sox -r 96k -t f32 -c 1 - flac/19-4.flac
 19-5: 19-ring
-	./19-ring 5 | sox -r 96k -t f32 -c 1 - 19-5.flac
+	./19-ring 5 | sox -r 96k -t f32 -c 1 - flac/19-5.flac
 
 clean:
-	rm -rf 00-mouse 01-keyboard 02-neon 03-camera 04-stream 05-neon 06-fb 07-chirp 08-resonance 09-noise 10-resonance 11-sweep 12-evol 13-lora-tx 14-lora-rx 15-udp 16-png-evol 17-raw-evol 18-ffmpeg-evol 19-ring rm ./tags *.s rm *.mp4 *.flac *.ogg
+	rm -rf 00-mouse 01-keyboard 02-neon 03-camera 04-stream 05-neon 06-fb 07-chirp 08-resonance 09-noise 10-resonance 11-sweep 12-evol 13-lora-tx 14-lora-rx 15-udp 16-png-evol 17-raw-evol 18-ffmpeg-evol 19-ring rm ./tags *.s rm mp4/*.mp4 flac/*.flac ogg/*.ogg
 
 tags:
 	ctags -R . /usr/include/ /opt/vc/include/ /usr/lib/gcc/arm-linux-gnueabihf/6/include
