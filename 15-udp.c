@@ -5,100 +5,134 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 #include <signal.h>
-#include <sys/wait.h>
+#include <sys/time.h>
+#include <time.h>
 #include <string.h>
+
+struct SOCK_OPER_CTX {
+    uint8_t buff[0x100];
+    int sock;
+    struct sockaddr_in addr;
+};
+
+static int g_run = 1;
 
 static void ctrl_c(int sig)
 {
     fprintf(stderr, "\nSIGINT (%d)\n", getpid());
-    close(0);
+    g_run = 0;
 }
 
-static int send_loop()
+static void fill_response(uint8_t buff[0x100])
 {
-    char buff[256];
-    while(fgets(buff, sizeof(buff), stdin)) {
-        char* data = 0;
-        char* addr_str = strtok_r(buff, " \t", &data);
-        char* port_str = strtok_r(0, " \t", &data);
-        struct hostent* he = gethostbyname(addr_str);
-
-        if(!he) {
-            fprintf(stderr, "Cannot find host: %s\n", addr_str);
-            continue;
-        }
-
-        int port = atoi(port_str);
-        if(port < 1024 || port > 65535)
-            port = 23456;
-
-        struct sockaddr_in addr = {
-            .sin_family = AF_INET,
-            .sin_addr.s_addr = *(uint32_t*)he->h_addr_list[0],
-            .sin_port = htons(port)
-        };
-
-        int len = strlen(data);
-        if(len < 1)
-            continue;
-
-        if(len != sendto(1, data, len, 0, (struct sockaddr *)&addr, sizeof(addr)))
-            fprintf(stderr, "Error sending data\n");
-
+    int i = 0;
+    for(; i < 0x100; i += 4) {
+        *(int*)&buff[i] = rand();
     }
-
-    fprintf(stderr, "End of send loop (%d)\n", getpid());
-    wait(0);
-    fprintf(stderr, "After wait (%d)\n", getpid());
-    return 0;
 }
 
-static int recv_loop()
+static void dump_buff(uint8_t buff[0x100])
 {
-    struct sockaddr_in addr = {0};
-    uint8_t buff[0x400] = {0};
-    int len = 0;
-    socklen_t addr_len = sizeof(addr);
-    addr.sin_family = AF_INET;
-    addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    addr.sin_port = htons(23456);
-    if(bind(0, (struct sockaddr *)&addr, sizeof(addr)) < 0)
-    {
-        perror("bind");
+    int i = 0;
+    for(; i < 0x100; i ++) {
+        fprintf(stderr, "%02X", buff[i]);
+    }
+    fprintf(stderr, "\n");
+}
+
+static void set_sock_timeout(int sock, int sec)
+{
+    struct timeval tv = {sec, 0};
+    setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (struct timeval*)&tv, sizeof(struct timeval));
+}
+
+static int socket_action(int (*socket_proc)(struct SOCK_OPER_CTX* ctx))
+{
+    struct SOCK_OPER_CTX ctx = {
+        .sock = socket(AF_INET, SOCK_DGRAM, 0),
+        .addr.sin_family = AF_INET
+    };
+    if(0 > ctx.sock) {
+        perror("socket");
         return 3;
     }
-    while(-1 != (len = recvfrom(0, buff, sizeof(buff), 0, (struct sockaddr*)&addr, &addr_len))) {
-        fprintf(stderr, "%s:%d:\n", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
-        if(len != write(1, buff, len))
-            perror("Write stdout");
-    }
+    int res = socket_proc(&ctx);
+    close(ctx.sock);
+    return res;
+}
 
-    fprintf(stderr, "End of recv loop (%d)\n", getpid());
+static int client_proc(struct SOCK_OPER_CTX* ctx)
+{
+    const char* server_ip = "205.166.94.4";
+
+    while(g_run) {
+
+        socklen_t addr_len = sizeof(ctx->addr);
+        struct hostent* he = gethostbyname(server_ip);
+        if(!he) {
+            perror(server_ip);
+            return 4;
+        }
+
+        ctx->addr.sin_addr.s_addr = *(uint32_t*)he->h_addr_list[0];
+        ctx->addr.sin_port = htons(27727);
+        set_sock_timeout(ctx->sock, 1);
+
+        if(0 != sendto(ctx->sock, ctx->buff, 0, 0, (struct sockaddr *)&ctx->addr, addr_len)) {
+            perror("sendto");
+            return 5;
+        }
+        int res = recvfrom(ctx->sock, ctx->buff, sizeof(ctx->buff), 0, (struct sockaddr*)&ctx->addr, &addr_len);
+        if(0 > res)
+            continue;
+
+        if(sizeof(ctx->buff) != res) {
+            fprintf(stderr, "Proto error: %s:%d:\n", inet_ntoa(ctx->addr.sin_addr), ntohs(ctx->addr.sin_port));
+            return 6;
+        }
+        dump_buff(ctx->buff);
+    }
     return 0;
 }
 
-int main()
+static int server_proc(struct SOCK_OPER_CTX* ctx)
 {
-    int ss = -1;
-    pid_t pp = 0;
-    ss = socket(AF_INET, SOCK_DGRAM, 0);
-    if(0 > ss) {
-        perror("socket");
+    socklen_t addr_len = sizeof(ctx->addr);
+    ctx->addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    ctx->addr.sin_port = htons(27727);
+    if(bind(ctx->sock, (struct sockaddr *)&ctx->addr, sizeof(ctx->addr)) < 0)
+    {
+        perror("bind");
+        return 4;
+    }
+    set_sock_timeout(ctx->sock, 3);
+    int res = recvfrom(ctx->sock, ctx->buff, sizeof(ctx->buff), 0, (struct sockaddr*)&ctx->addr, &addr_len);
+    if(0 > res) { //probably timout
+        return 5;
+    }
+    if(0 != res) {
+        return 6;
+    }
+    fill_response(ctx->buff);
+    if(sizeof(ctx->buff) != sendto(ctx->sock, ctx->buff, sizeof(ctx->buff), 0, (struct sockaddr *)&ctx->addr, sizeof(ctx->addr))) {
+        perror("sendto");
+        return 7;
+    }
+    return 0;
+}
+
+int main(int argc, char* argv[])
+{
+    if(2 != argc)
         return 1;
-    }
+    argc --;
+    argv ++;
     signal(SIGINT, ctrl_c);
-    pp = fork();
-    if(-1 == pp) {
-        perror("fork");
-        return 2;
-    }
-    if(0 == pp) {
-        dup2(ss, 0);
-        close(ss);
-        return recv_loop();
-    }
-    dup2(ss, 1);
-    close(ss);
-    return send_loop();
+    srand(time(0));
+    if(!strcmp("client", *argv))
+        return socket_action(client_proc);
+    if(!strcmp("server", *argv))
+        return socket_action(server_proc);
+    return 2;
 }
 
