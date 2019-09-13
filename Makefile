@@ -111,8 +111,12 @@ flac: 19-flac
 
 15-deb:
 	$(CC) $(DEB) -o 15-udp 15-udp.c
+	ln -fs 15-udp dev-client
+	ln -fs 15-udp dev-server
 15-rel:
 	$(CC) $(REL) -o 15-udp 15-udp.c
+	ln -fs 15-udp dev-client
+	ln -fs 15-udp dev-server
 
 16-deb:
 	$(CC) $(DEB) -o 16-png-evol 16-png-evol.c -lpng
@@ -164,7 +168,7 @@ flac: 19-flac
 	./19-ring 5 | sox -r 96k -t f32 -c 1 - flac/19-5.flac
 
 clean:
-	rm -rf 00-mouse 01-keyboard 02-neon 03-camera 04-stream 05-neon 06-fb 07-chirp 08-resonance 09-noise 10-resonance 11-sweep 12-evol 13-lora-tx 14-lora-rx 15-udp 16-png-evol 17-raw-evol 18-ffmpeg-evol 19-ring rm ./tags *.s rm mp4/*.mp4 flac/*.flac ogg/*.ogg
+	rm -rf 00-mouse 01-keyboard 02-neon 03-camera 04-stream 05-neon 06-fb 07-chirp 08-resonance 09-noise 10-resonance 11-sweep 12-evol 13-lora-tx 14-lora-rx 15-udp dev-client dev-server 16-png-evol 17-raw-evol 18-ffmpeg-evol 19-ring rm ./tags *.s rm mp4/*.mp4 flac/*.flac ogg/*.ogg
 
 tags:
 	ctags -R . /usr/include/ /opt/vc/include/ /usr/lib/gcc/arm-linux-gnueabihf/6/include
