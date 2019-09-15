@@ -82,7 +82,6 @@ int client_main(int argc, char* argv[])
             break;
         }
 
-        addr.sin_addr.s_addr = htonl(INADDR_ANY);
         if(sizeof(buff) != recvfrom(ss, buff, sizeof(buff), 0, (struct sockaddr*)&addr, &addr_len))
             continue;
 
