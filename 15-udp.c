@@ -9,14 +9,6 @@
 #include <time.h>
 #include <string.h>
 
-struct SOCK_ACTION_CTX {
-    uint8_t buff[0x100];
-    int sock;
-    struct sockaddr_in addr;
-    int argc;
-    char** argv;
-};
-
 static int g_run = 1;
 
 static void ctrl_c(int sig)
@@ -25,148 +17,142 @@ static void ctrl_c(int sig)
     g_run = 0;
 }
 
-static void fill_response(uint8_t buff[0x100])
-{
-    int i = 0;
-    for(; i < 0x100; i += 4) {
-        *(int*)&buff[i] = rand();
-    }
-}
+//static void l0_fill_rand(struct SOCK_ACTION_CTX* ctx)
+//{
+//    int i = 0;
+//    for(; i < sizeof(ctx->buff); i += 4) {
+//        *(int*)(ctx->buff + i) = rand();
+//    }
+//}
+//
 
-static void dump_buff(uint8_t buff[0x100])
-{
-    int i = 0;
-    for(; i < 0x100; i ++) {
-        fprintf(stderr, "%02X", buff[i]);
-    }
-    fprintf(stderr, "\n");
-}
+//static void dump_buff(uint8_t buff[0x20])
+//{
+//    int i = 0;
+//    for(; i < 0x20; i ++) {
+//        fprintf(stderr, "%02X", buff[i]);
+//    }
+//    fprintf(stderr, "\n");
+//}
 
-static int l0_set_timeout(int sock, int sec)
+int client_main(int argc, char* argv[])
 {
-    struct timeval tv = {sec, 0};
-    if(0 > setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (struct timeval*)&tv, sizeof(struct timeval))) {
-        perror("setsockopt");
-        return -1;
-    }
-    return 0;
-}
-
-static int l0_host_ip_port(struct sockaddr_in* addr, const char* name, uint16_t port)
-{
-    struct hostent* he = gethostbyname(name);
-    if(!he) {
-        perror("gethostbyname");
-        return -1;
-    }
-
-    addr->sin_addr.s_addr = *(uint32_t*)he->h_addr_list[0];
-    addr->sin_port = htons(port);
-    return 0;
-}
-
-static int l0_bind_server_socket(int sock, struct sockaddr_in* addr, uint16_t port)
-{
-    addr->sin_addr.s_addr = htonl(INADDR_ANY);
-    addr->sin_port = htons(port);
-    if(bind(sock, (struct sockaddr *)addr, sizeof(*addr)) < 0)
-    {
-        perror("bind");
-        return -1;
-    }
-    return 0;
-}
-
-static int sock_action(int (*socket_proc)(struct SOCK_ACTION_CTX* ctx), int argc, char* argv[])
-{
-    struct SOCK_ACTION_CTX ctx = {
-        .sock = socket(AF_INET, SOCK_DGRAM, 0),
-        .addr.sin_family = AF_INET,
-        .argc = argc,
-        .argv = argv
-    };
-    if(0 > ctx.sock) {
-        perror("socket");
-        return 2;
-    }
-    int res = socket_proc(&ctx);
-    close(ctx.sock);
-    return res;
-}
-
-static int client_proc(struct SOCK_ACTION_CTX* ctx)
-{
-    if(2 != ctx->argc)
+    int res = 0;
+    if(argc != 3)
         return 1;
+
+    argc --;
+    argv ++;
+    int ss = socket(AF_INET, SOCK_DGRAM, 0);
+    if(ss < 0) {
+        perror("socket");
+        return 3;
+    }
+    struct timeval tv = {3, 0};
+    if(0 > setsockopt(ss, SOL_SOCKET, SO_RCVTIMEO, (struct timeval*)&tv, sizeof(struct timeval))) {
+        perror("setsockopt");
+        close(ss);
+        return 4;
+    }
+
+    int port = atoi(argv[1]);
+    if(port < 1024 || port > (1 << 16) - 1)
+        port = 27727;
 
     while(g_run) {
 
-        socklen_t addr_len = sizeof(ctx->addr);
-
-        if(l0_set_timeout(ctx->sock, 1))
-            return 4;
-
-        if(l0_host_ip_port(&ctx->addr, ctx->argv[1], 27727))
-            return 5;
-
-        if(0 != sendto(ctx->sock, ctx->buff, 0, 0, (struct sockaddr *)&ctx->addr, addr_len)) {
-            perror("sendto");
-            return 4;
+        struct sockaddr_in addr = {.sin_family = AF_INET};
+        struct hostent* he = gethostbyname(argv[0]);
+        if(!he) {
+            perror("gethostbyname");
+            res = 5;
+            break;
         }
-        int res = recvfrom(ctx->sock, ctx->buff, sizeof(ctx->buff), 0, (struct sockaddr*)&ctx->addr, &addr_len);
-        if(0 > res)
+
+        addr.sin_addr.s_addr = *(uint32_t*)he->h_addr_list[0];
+        addr.sin_port = htons(port);
+
+        uint8_t buff[32];
+        socklen_t addr_len = sizeof(addr);
+        if(sizeof(buff) != sendto(ss, buff, sizeof(buff), 0, (struct sockaddr *)&addr, addr_len)) {
+            if(!g_run) {
+                perror("sendto");
+                res = 6;
+            }
+            break;
+        }
+
+        if(sizeof(buff) != recvfrom(ss, buff, sizeof(buff), 0, (struct sockaddr*)&addr, &addr_len))
             continue;
 
-        if(sizeof(ctx->buff) != res) {
-            fprintf(stderr, "Proto error: %s:%d:\n", inet_ntoa(ctx->addr.sin_addr), ntohs(ctx->addr.sin_port));
-            return 5;
-        }
-        dump_buff(ctx->buff);
+        fprintf(stderr, "%s:%d:\n", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
     }
-    return 0;
+    close(ss);
+    return res;
 }
 
-static int server_proc(struct SOCK_ACTION_CTX* ctx)
+int server_main(int argc, char* argv[])
 {
-    socklen_t addr_len = sizeof(ctx->addr);
-    if(l0_bind_server_socket(ctx->sock, &ctx->addr, 27727))
+    int res = 0;
+    if(argc != 2)
+        return 1;
+
+    argc --;
+    argv ++;
+
+    struct sockaddr_in addr = {.sin_family = AF_INET};
+
+    int ss = socket(AF_INET, SOCK_DGRAM, 0);
+    if(ss < 0) {
+        perror("socket");
         return 3;
-    if(l0_set_timeout(ctx->sock, 3))
-        return 4;
-    int res = recvfrom(ctx->sock, ctx->buff, sizeof(ctx->buff), 0, (struct sockaddr*)&ctx->addr, &addr_len);
-    if(0 > res) { //probably timout
-        return 4;
     }
-    if(0 != res) {
-        return 5;
-    }
-    fill_response(ctx->buff);
-    if(sizeof(ctx->buff) != sendto(ctx->sock, ctx->buff, sizeof(ctx->buff), 0, (struct sockaddr *)&ctx->addr, sizeof(ctx->addr))) {
-        perror("sendto");
-        return 6;
-    }
-    return 0;
-}
 
-static char* norm_cmd(char* argv)
-{
-    char* res = argv;
-    while(*argv) {
-        if('/' == *argv ++)
-            res = argv;
+    struct timeval tv = {3, 0};
+    if(0 > setsockopt(ss, SOL_SOCKET, SO_RCVTIMEO, (struct timeval*)&tv, sizeof(struct timeval))) {
+        perror("setsockopt");
+        close(ss);
+        return 4;
     }
+
+    int port = atoi(*argv);
+    if(port < 1024 || port > (1 << 16) - 1)
+        port = 27727;
+
+    addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    addr.sin_port = htons(port);
+    if(bind(ss, (struct sockaddr *)&addr, sizeof(addr)) < 0)
+    {
+        perror("bind");
+        close(ss);
+        return 4;
+    }
+
+    while(g_run) {
+
+        uint8_t buff[32];
+        socklen_t addr_len = sizeof(addr);
+        if(sizeof(buff) != recvfrom(ss, buff, sizeof(buff), 0, (struct sockaddr*)&addr, &addr_len))
+            continue;
+        fprintf(stderr, "%s:%d:\n", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
+    }
+
+    close(ss);
     return res;
 }
 
 int main(int argc, char* argv[])
 {
+    if(argc < 2)
+        return 1;
+    argc --;
+    argv ++;
     signal(SIGINT, ctrl_c);
-    char* cmd = norm_cmd(*argv);
     srand(time(0));
-    if(!strcmp("dev-client", cmd))
-        return sock_action(client_proc, argc, argv);
-    if(!strcmp("dev-server", cmd))
-        return sock_action(server_proc, argc, argv);
-    return 1;
+    if(!strcmp("client", *argv))
+        return client_main(argc, argv);
+    if(!strcmp("server", *argv))
+        return server_main(argc, argv);
+    return 2;
 }
 
