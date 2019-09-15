@@ -43,11 +43,15 @@ int client_main(int argc, char* argv[])
 
     argc --;
     argv ++;
+
+    struct sockaddr_in addr = {.sin_family = AF_INET};
+
     int ss = socket(AF_INET, SOCK_DGRAM, 0);
     if(ss < 0) {
         perror("socket");
         return 3;
     }
+
     struct timeval tv = {3, 0};
     if(0 > setsockopt(ss, SOL_SOCKET, SO_RCVTIMEO, (struct timeval*)&tv, sizeof(struct timeval))) {
         perror("setsockopt");
@@ -59,9 +63,17 @@ int client_main(int argc, char* argv[])
     if(port < 1024 || port > (1 << 16) - 1)
         port = 27727;
 
+    addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    addr.sin_port = htons(port);
+    if(bind(ss, (struct sockaddr *)&addr, sizeof(addr)) < 0)
+    {
+        perror("bind");
+        close(ss);
+        return 4;
+    }
+
     while(g_run) {
 
-        struct sockaddr_in addr = {.sin_family = AF_INET};
         struct hostent* he = gethostbyname(argv[0]);
         if(!he) {
             perror("gethostbyname");
