@@ -48,7 +48,7 @@ int client_main(int argc, char* argv[])
         perror("socket");
         return 3;
     }
-    struct timeval tv = {3, 0};
+    struct timeval tv = {1, 0};
     if(0 > setsockopt(ss, SOL_SOCKET, SO_RCVTIMEO, (struct timeval*)&tv, sizeof(struct timeval))) {
         perror("setsockopt");
         close(ss);
@@ -74,7 +74,9 @@ int client_main(int argc, char* argv[])
 
         uint8_t buff[32];
         socklen_t addr_len = sizeof(addr);
-        if(sizeof(buff) != sendto(ss, buff, sizeof(buff), 0, (struct sockaddr *)&addr, addr_len)) {
+        int len = 0;
+        len = sendto(ss, buff, sizeof(buff), 0, (struct sockaddr *)&addr, addr_len);
+        if(len != sizeof(buff)) {
             if(!g_run) {
                 perror("sendto");
                 res = 6;
@@ -82,10 +84,21 @@ int client_main(int argc, char* argv[])
             break;
         }
 
-        if(sizeof(buff) != recvfrom(ss, buff, sizeof(buff), 0, (struct sockaddr*)&addr, &addr_len))
-            continue;
-
-        fprintf(stderr, "%s:%d:\n", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
+        int cnt = 60;
+        while(g_run && cnt) {
+            len = recvfrom(ss, buff, sizeof(buff), 0, (struct sockaddr*)&addr, &addr_len);
+            if(len < 0) {
+                cnt --;
+                continue;
+            }
+            if(!len) {
+                fprintf(stderr, "PING: %s:%d:\n", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
+                continue;
+            }
+            if(len == sizeof(buff)) {
+                break;
+            }
+        }
     }
     close(ss);
     return res;
@@ -108,7 +121,7 @@ int server_main(int argc, char* argv[])
         return 3;
     }
 
-    struct timeval tv = {3, 0};
+    struct timeval tv = {1, 0};
     if(0 > setsockopt(ss, SOL_SOCKET, SO_RCVTIMEO, (struct timeval*)&tv, sizeof(struct timeval))) {
         perror("setsockopt");
         close(ss);
@@ -135,6 +148,10 @@ int server_main(int argc, char* argv[])
         if(sizeof(buff) != recvfrom(ss, buff, sizeof(buff), 0, (struct sockaddr*)&addr, &addr_len))
             continue;
         fprintf(stderr, "%s:%d:\n", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
+        if(0 != sendto(ss, buff, 0, 0, (struct sockaddr *)&addr, addr_len)) {
+            perror("sendto");
+            return 5;
+        }
     }
 
     close(ss);
