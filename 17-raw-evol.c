@@ -1,17 +1,12 @@
-#include <stdio.h>
+//#include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 #include <stdint.h>
+#include <unistd.h>
 
-#define WIDTH 200
-#define HEIGHT 200
-#define DOT_COUNT 400
-
-//time ./17-raw-evol > /dev/null
-//uint8_t and uint32_t:
-//real    0m0.019s
-//user    0m0.018s
-//sys 0m0.002s
+#define WIDTH 400
+#define HEIGHT 400
+#define DOT_COUNT 16000
 
 
 struct DOT
@@ -19,12 +14,11 @@ struct DOT
     int x, y, distance;
 };
 
-static void erase(unsigned width, unsigned height, uint32_t* bitmap, uint32_t color)
+static void erase(uint32_t bitmap[HEIGHT][WIDTH], unsigned width, unsigned height, uint32_t color)
 {
-    unsigned x, y;
-    for(y = 0; y < height; y ++)
-        for(x = 0; x < width; x ++)
-            *bitmap ++ = color;
+    for(unsigned y = 0; y < HEIGHT; y ++)
+        for(unsigned x = 0; x < WIDTH; x ++)
+            bitmap[y][x] = color;
 }
 
 static void init_random_dots(unsigned width, unsigned height, unsigned count, struct DOT* dots)
@@ -40,16 +34,14 @@ static void init_random_dots(unsigned width, unsigned height, unsigned count, st
 
 static void draw_dots(unsigned width
         , unsigned height
-        , uint32_t* bitmap
+        , uint32_t bitmap[HEIGHT][WIDTH]
         , unsigned count
         , struct DOT* dots
         , uint32_t color)
 {
     while(count --)
     {
-        uint32_t* p = bitmap;
-        p += (dots->x + width / 2 + (dots->y + height / 2) * width);
-        *p ++ = color;
+        bitmap[dots->y + height / 2][dots->x + width / 2] = color;
         dots ++;
     }
 }
@@ -73,11 +65,14 @@ static void evol_dots(unsigned count, struct DOT* dots)
 {
     struct DOT* p1 = dots;
     struct DOT* p2 = dots + count - 1;
+
     count /= 2;
     while(count --)
     {
-        p2->x = p1->x + (rand() & 1 ? 1 : -1);
-        p2->y = p1->y + (rand() & 1 ? 1 : -1);
+        if(p1->x > -WIDTH / 2 + 1 && p1->x < WIDTH / 2 - 1)
+            p2->x = p1->x + (rand() & 1 ? 1 : -1);
+        if(p1->y > -HEIGHT / 2 + 1 && p1->y < HEIGHT / 2 - 1)
+            p2->y = p1->y + (rand() & 1 ? 1 : -1);
         p2->distance = 0;
         p1 ++;
         p2 --;
@@ -88,20 +83,28 @@ int main()
 {
     int result = 0;
     struct DOT dots[DOT_COUNT]; 
-    unsigned width = WIDTH, height = HEIGHT, file_num;
-    uint32_t bitmap[width * height];
+    unsigned width = WIDTH, height = HEIGHT;
+    uint32_t bitmap[HEIGHT][WIDTH];
     srand(time(0));
     init_random_dots(width, height, DOT_COUNT, dots);
-    for(file_num = 0; !result && file_num < 30; file_num ++)
+    for(int i = 0; i < 10; i ++)
     {
-        erase(width, height, bitmap, 0x00000000);
-        draw_dots(width, height, bitmap, DOT_COUNT, dots, 0xFFFFFFFF);
-        fwrite(bitmap, sizeof(bitmap), 1, stdout);
-        fflush(stdout);
-        calc_dot_deltas(width, height, 75, DOT_COUNT, dots);
-        qsort(dots, DOT_COUNT, sizeof(struct DOT), (int(*)(const void *, const void *))dot_sort_proc);
+        erase(bitmap, WIDTH, HEIGHT, 0);
+        draw_dots(width, height, bitmap, DOT_COUNT, dots, 0xFF00FF00);
+        write(STDOUT_FILENO, bitmap, sizeof(bitmap));
         evol_dots(DOT_COUNT, dots);
+        calc_dot_deltas(width, height, 100, DOT_COUNT, dots);
+        qsort(dots, DOT_COUNT, sizeof(struct DOT), (int(*)(const void *, const void *))dot_sort_proc);
     }
+
+//    for(unsigned y = 0; y < HEIGHT; y ++) {
+//        for(unsigned x = 0; x < WIDTH; x ++) {
+//            bitmap[y][x] |= 0xFF00FF00;
+//            bitmap[HEIGHT - y - 1][WIDTH - x - 1] |= 0xFF0000FF;
+//            write(STDOUT_FILENO, bitmap, sizeof(bitmap));
+//        }
+//    }
+
     return result;
 }
 

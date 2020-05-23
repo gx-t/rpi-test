@@ -130,7 +130,7 @@ flac: 19-flac
 17-raw-evol: 17-raw-evol.c
 	$(CC) $(REL) -o 17-raw-evol 17-raw-evol.c
 17-mp4: 17-raw-evol
-	./17-raw-evol | ffmpeg -y -s 200x200 -pix_fmt rgba -f rawvideo -r 2 -i - -c:v libx264 -vf "fps=30,format=yuv420p" mp4/17-out.mp4
+	./17-raw-evol | ffmpeg -y -s 400x400 -pix_fmt rgba -f rawvideo -r 3 -i - -c:v libx264 mp4/17-out.mp4
 
 18-deb:
 	$(CC) $(DEB) -o 18-ffmpeg-evol 18-ffmpeg-evol.c
