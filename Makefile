@@ -130,7 +130,7 @@ flac: 19-flac
 17-raw-evol: 17-raw-evol.c
 	$(CC) $(REL) -o 17-raw-evol 17-raw-evol.c
 17-mp4: 17-raw-evol
-	./17-raw-evol | ffmpeg -y -s 400x400 -pix_fmt rgba -f rawvideo -r 3 -i - -c:v libx264 mp4/17-out.mp4
+	ffmpeg -i flower-400x400.jpeg -vf scale=400:400 -f rawvideo -pix_fmt rgba - | ./17-raw-evol | ffmpeg -y -s 400x400 -pix_fmt rgba -f rawvideo -r 30 -i - -c:v libx264 mp4/17-out.mp4
 
 18-deb:
 	$(CC) $(DEB) -o 18-ffmpeg-evol 18-ffmpeg-evol.c
