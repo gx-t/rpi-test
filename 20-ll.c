@@ -12,7 +12,7 @@
 
 struct bcm2835_peripherial {
     uint8_t* base;
-    uint32_t* gpio_base;
+    uint8_t* gpio_base;
 } static bcm2835_peripherial = {0};
 
 static int bcm2835_peripherial_open()
@@ -23,7 +23,7 @@ static int bcm2835_peripherial_open()
         perror(dev_mem);
         return 1;
     }
-    //bcm2835 (rpi4) - 0xFE000000
+    //bcm2711 (rpi4) - 0xfe000000
     bcm2835_peripherial.base = mmap(0, 0x200000 + 0x1000, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0x3f000000);
     close(fd);
 
@@ -31,7 +31,7 @@ static int bcm2835_peripherial_open()
         perror("mmap");
         return 2;
     }
-    bcm2835_peripherial.gpio_base = (uint32_t*)(bcm2835_peripherial.base + 0x200000);
+    bcm2835_peripherial.gpio_base = bcm2835_peripherial.base + 0x200000;
     return 0;
 }
 
@@ -42,27 +42,27 @@ static void bcm2835_peripherial_close()
 
 static void bcm2835_gpio04_set_input()
 {
-    bcm2835_peripherial.gpio_base[0] &= 0b111000000000000;
+    bcm2835_peripherial.gpio_base[0] &= ~(0b000 << 12);
 }
 
 static void bcm2835_gpio04_set_output()
 {
-    bcm2835_peripherial.gpio_base[0] |= 0b001000000000000;
+    bcm2835_peripherial.gpio_base[0] |= (0b001 << 12);
 }
 
 static void bcm2835_gpio04_set()
 {
-    bcm2835_peripherial.gpio_base[7] |= 0b10000;
+    bcm2835_peripherial.gpio_base[0x1c] |= (0b1 << 4);
 }
 
 static void bcm2835_gpio04_unset()
 {
-    bcm2835_peripherial.gpio_base[10] |= 0b10000;
+    bcm2835_peripherial.gpio_base[0x28] |= (0b1 << 4);
 }
 
 //static int bcm2835_gpio04_get()
 //{
-//    !!(bcm2835_peripherial.gpio_base[13] & 0b10000);
+//    !!(bcm2835_peripherial.gpio_base[0x34] & (0b1 << 4));
 //}
 
 static int running = 1;
