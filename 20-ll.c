@@ -50,6 +50,11 @@ static void bcm2835_gpio04_set_output()
     bcm2835_peripherial.gpio_base[0] |= (0b001 << 12);
 }
 
+static void bcm2835_gpio04_set_gpclk0()
+{
+    bcm2835_peripherial.gpio_base[0] |= (0b100 << 12);
+}
+
 static void bcm2835_gpio04_set()
 {
     bcm2835_peripherial.gpio_base[0x1c] |= (0b1 << 4);
