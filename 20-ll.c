@@ -16,31 +16,6 @@ struct bcm2835_peripherial {
     uint32_t* gpio_base;
 } static bcm2835_peripherial = {0};
 
-static int bcm2835_peripherial_open()
-{
-    const char* dev_mem = "/dev/mem";
-    int fd = open(dev_mem, O_RDWR | O_SYNC);
-    if(fd < 0) {
-        perror(dev_mem);
-        return 3;
-    }
-    //bcm2711 (rpi4) - 0xfe000000
-    bcm2835_peripherial.base = mmap(0, 0x200000 + 0x1000, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0x3f000000);
-    close(fd);
-
-    if(MAP_FAILED == bcm2835_peripherial.base) {
-        perror("mmap");
-        return 4;
-    }
-    bcm2835_peripherial.gpio_base = (uint32_t*)(bcm2835_peripherial.base + 0x200000);
-    return 0;
-}
-
-static void bcm2835_peripherial_close()
-{
-    munmap(bcm2835_peripherial.base, 0x200000 + 0x1000);
-}
-
 static void bcm2835_gpio04_set_input()
 {
     bcm2835_peripherial.gpio_base[0 / 4] &= ~(0b111 << 12);
@@ -72,10 +47,11 @@ static void bcm2835_gpio04_unset()
 //}
 
 static int running = 1;
+static int _argc = 0;
+static char** _argv = 0;
 
 static int f_blink()
 {
-    // Define pin 7 as output
     bcm2835_gpio04_set_input();
     bcm2835_gpio04_set_output();
 
@@ -94,17 +70,32 @@ static int f_blink()
 static int ll_operation(int (*f)())
 {
     int res = 0;
-    if((res = bcm2835_peripherial_open()))
-        return res;
+    const char* dev_mem = "/dev/mem";
+    int fd = open(dev_mem, O_RDWR | O_SYNC);
+    if(fd < 0) {
+        perror(dev_mem);
+        return 3;
+    }
+    //bcm2711 (rpi4) - 0xfe000000
+    bcm2835_peripherial.base = mmap(0, 0x200000 + 0x1000, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0x3f000000);
+    close(fd);
+
+    if(MAP_FAILED == bcm2835_peripherial.base) {
+        perror("mmap");
+        return 4;
+    }
+    bcm2835_peripherial.gpio_base = (uint32_t*)(bcm2835_peripherial.base + 0x200000);
+
     res = f();
-    bcm2835_peripherial_close();
+
+    munmap(bcm2835_peripherial.base, 0x200000 + 0x1000);
     return res;
 }
 
-static void show_usage(const char* argv_0)
+static void show_usage()
 {
     fprintf(stderr, "Usage:\n");
-    fprintf(stderr, "%s blink\n", argv_0);
+    fprintf(stderr, "%s blink\n", _argv[0]);
 }
 
 static void ctrl_c(int sig)
@@ -114,10 +105,12 @@ static void ctrl_c(int sig)
 }
 
 int main(int argc, char* argv[]) {
+    _argc = argc;
+    _argv = argv;
     signal(SIGINT, ctrl_c);
 
     if(2 != argc) {
-        show_usage(argv[0]);
+        show_usage();
         return 1;
     }
 
