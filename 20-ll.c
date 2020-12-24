@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdint.h>
 #include <fcntl.h>
 #include <sys/mman.h>
@@ -14,6 +15,8 @@
 struct bcm2835_peripherial {
     uint8_t* base;
     uint32_t* gpio_base;
+    uint32_t* cm_gp0ctl;
+    uint32_t* cm_gp0div;
 } static bcm2835_peripherial = {0};
 
 static void bcm2835_gpio04_set_input()
@@ -67,6 +70,65 @@ static int f_blink()
     return 0;
 }
 
+static void show_usage_freq()
+{
+    fprintf(stderr, "Usage:\n");
+    fprintf(stderr, "\t%s %s <frequency>\n", _argv[0], _argv[1]);
+    fprintf(stderr, "\tfrequency in Hz, positive number.\n");
+}
+
+static int f_freq()
+{
+    if(3 != _argc) {
+        show_usage_freq();
+        return 5;
+    }
+
+    double freq = atof(_argv[2]);
+    if(freq < 0) {
+        fprintf(stderr, "Frequency must be positive.\n");
+        show_usage_freq();
+        return 6;
+    }
+
+    uint32_t div = (uint32_t)(0.5 + 500e6 / freq * 4096.0);
+    if(div < 1 || div > 0x1000000 - 1) {
+        fprintf(stderr, "Frequency value is out of range.\n");
+        show_usage_freq();
+        return 7;
+    }
+
+    bcm2835_gpio04_set_gpclk0();
+    //TODO: check PLLA
+    struct {
+        uint32_t src : 4;
+        uint32_t enab : 1;
+        uint32_t kill : 1;
+        uint32_t : 1;
+        uint32_t busy : 1;
+        uint32_t flip : 1;
+        uint32_t mash : 2;
+        uint32_t : 13;
+        uint32_t passwd : 8;
+    } cm_gp0ctl = {
+        .src = 6,
+        .enab = 1,
+        .mash = 1,
+        .passwd = 0x5a
+    };
+    *bcm2835_peripherial.cm_gp0ctl = *(uint32_t*)&cm_gp0ctl;
+
+    struct {
+        uint32_t div : 24;
+        uint32_t passwd : 8;
+    } cm_gp0div = {
+        .div = div,
+        .passwd = 0x5a
+    };
+    *bcm2835_peripherial.cm_gp0div = *(uint32_t*)&cm_gp0div;
+    return 0;
+}
+
 static int ll_operation(int (*f)())
 {
     int res = 0;
@@ -85,6 +147,8 @@ static int ll_operation(int (*f)())
         return 4;
     }
     bcm2835_peripherial.gpio_base = (uint32_t*)(bcm2835_peripherial.base + 0x200000);
+    bcm2835_peripherial.cm_gp0ctl = (uint32_t*)(bcm2835_peripherial.base + 0x101070);
+    bcm2835_peripherial.cm_gp0div = (uint32_t*)(bcm2835_peripherial.base + 0x101074);
 
     res = f();
 
@@ -96,6 +160,7 @@ static void show_usage()
 {
     fprintf(stderr, "Usage:\n");
     fprintf(stderr, "%s blink\n", _argv[0]);
+    fprintf(stderr, "%s freq <param>\n", _argv[0]);
 }
 
 static void ctrl_c(int sig)
@@ -109,13 +174,15 @@ int main(int argc, char* argv[]) {
     _argv = argv;
     signal(SIGINT, ctrl_c);
 
-    if(2 != argc) {
+    if(2 > argc) {
         show_usage();
         return 1;
     }
 
     if(!strcmp("blink", argv[1]))
         return ll_operation(f_blink);
+    if(!strcmp("freq", argv[1]))
+        return ll_operation(f_freq);
 
     fprintf(stderr, "Unknown sub-commnd: %s\n", argv[1]);
     return 2;
