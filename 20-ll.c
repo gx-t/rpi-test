@@ -75,6 +75,7 @@ static void show_usage_freq()
     fprintf(stderr, "Usage:\n");
     fprintf(stderr, "\t%s %s <frequency>\n", _argv[0], _argv[1]);
     fprintf(stderr, "\tfrequency in Hz, positive number.\n");
+    fprintf(stderr, "\tfrequency 0, to stop the generation.\n");
 }
 
 static int f_freq()
@@ -89,13 +90,6 @@ static int f_freq()
         fprintf(stderr, "Frequency must be positive.\n");
         show_usage_freq();
         return 6;
-    }
-
-    uint32_t div = (uint32_t)(0.5 + 500e6 / freq * 4096.0);
-    if(div < 1 || div > 0x1000000 - 1) {
-        fprintf(stderr, "Frequency value is out of range.\n");
-        show_usage_freq();
-        return 7;
     }
 
     bcm2835_gpio04_set_gpclk0();
@@ -116,6 +110,20 @@ static int f_freq()
         .mash = 1,
         .passwd = 0x5a
     };
+
+    if(0 == freq) {
+        cm_gp0ctl.enab = 0;
+        *bcm2835_peripherial.cm_gp0ctl = *(uint32_t*)&cm_gp0ctl;
+        return 0;
+    }
+
+    uint32_t div = (uint32_t)(0.5 + 500e6 / freq * 4096.0);
+    if(div < 1 || div > 0x1000000 - 1) {
+        fprintf(stderr, "Frequency value is out of range.\n");
+        show_usage_freq();
+        return 7;
+    }
+
     *bcm2835_peripherial.cm_gp0ctl = *(uint32_t*)&cm_gp0ctl;
 
     struct {
