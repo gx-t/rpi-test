@@ -25,7 +25,7 @@ static int spi = 0;
 static int nrf24_read_reg(uint8_t reg, uint8_t* val)
 {
     char rx[2] = {0, 0}, tx[2] = {reg, 0};
-    if(0 > spiXfer(spi, tx, rx, 2)) {
+    if(2 != spiXfer(spi, tx, rx, 2)) {
         perror(__func__);
         return 4;
     }
@@ -36,9 +36,40 @@ static int nrf24_read_reg(uint8_t reg, uint8_t* val)
 static int nrf24_write_reg(uint8_t reg, uint8_t val)
 {
     char rx[2] = {0, 0}, tx[2] = {0x20 | (reg & 0x1F), val};
-    if(0 > spiXfer(spi, tx, rx, 2)) {
+    if(2 != spiXfer(spi, tx, rx, 2)) {
         perror(__func__);
         return 5;
+    }
+    return 0;
+}
+
+static int nrf24_write_tx_addr_5_ff()
+{
+    char rx[6] = {0}, tx[6] = {0x20 | 0x10, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+    if(nrf24_write_reg(0x03, 0x03) || 6 != spiXfer(spi, tx, rx, 6)) { //address length=5, address=0xFF...0xFF
+        perror(__func__);
+        return 6;
+    }
+    return 0;
+}
+
+static int nrf24_write_tx_fifo_32_ff()
+{
+    char rx[33] = {0}, tx[33] = {0xA0};
+    memset(tx + 1, 0xFF, 32);
+    if(33 != spiXfer(spi, tx, rx, 33)) {
+        perror(__func__);
+        return 7;
+    }
+    return 0;
+}
+
+static int nrf24_reuse_tx_pl()
+{
+    char rx = 0, tx = 0b11100011;
+    if(1 != spiXfer(spi, &tx, &rx, 1)) {
+        perror(__func__);
+        return 8;
     }
     return 0;
 }
@@ -64,6 +95,7 @@ static void show_usage()
     fprintf(stderr, "Usage:\n");
     fprintf(stderr, "\t%s scan\n", *__argv__);
     fprintf(stderr, "\t%s carrier <channel> <power level>\n", *__argv__);
+    fprintf(stderr, "\t%s tx <channel> <power level>\n", *__argv__);
     fprintf(stderr, "\t\t%s channel: 0-127\n", *__argv__);
     fprintf(stderr, "\t\t%s power level: 0-3\n", *__argv__);
 }
@@ -131,6 +163,43 @@ static int f_carrier()
     return 0;
 }
 
+static int f_tx()
+{
+    if(__argc__ != 4) {
+        show_usage();
+        return 1;
+    }
+    int ch = atoi(__argv__[2]);
+    int power = atoi(__argv__[3]);
+    if(ch < 0 || ch > 127)
+        ch = 0;
+    if(power < 0 || power > 3)
+        power = 3;
+    fprintf(stderr, "%s: using channel %d (%d Mhz) and power level %d\n", __argv__[1], ch, 2400 + ch, power);
+    nrf24_write_reg(0x00, 0b01110010); //no interrupts, no CRC, power up, TX
+    usleep(1500); //data sheet p.20, f.3
+    nrf24_write_reg(0x00, 0b01110010); //no interrupts, no CRC, power up, TX
+    nrf24_write_reg(0x01, 0b00000000); //no auto-acknowledgement
+    nrf24_write_reg(0x04, 0b00000000); //no auto-retransmit
+    nrf24_write_reg(0x05, (uint8_t)ch); //set channel (data sheet page 54)
+    nrf24_write_reg(0x06, 0b00010000 | (power << 1)); //PLL lock, data rate 1Mbps, set power, no LNA
+    nrf24_write_tx_addr_5_ff();
+    nrf24_write_tx_fifo_32_ff();
+    nrf24_write_reg(0x07, 0b01111110); //clear interrupt bits
+    gpioWrite(17, 1); //chip enable
+    usleep(100);
+    gpioWrite(17, 0); //chip disable
+    usleep(1000);
+    gpioWrite(17, 1); //chip enable
+    nrf24_reuse_tx_pl();
+    while(running) {
+        usleep(1000);
+    }
+    gpioWrite(17, 0); //chip disable
+    nrf24_write_reg(0x00, 0x00); //power down, TX
+    return 0;
+}
+
 static int spi_op(int (*f)())
 {
     if(0 > gpioInitialise()) {
@@ -166,6 +235,8 @@ int main(int argc, char* argv[])
         return spi_op(f_scan);
     if(!strcmp("carrier", argv[1]))
         return spi_op(f_carrier);
+    if(!strcmp("tx", argv[1]))
+        return spi_op(f_tx);
     fprintf(stderr, "Unknown operation: %s\n", argv[1]);
     show_usage();
     return 2;
