@@ -43,9 +43,10 @@ static int nrf24_write_reg(uint8_t reg, uint8_t val)
     return 0;
 }
 
-static int nrf24_write_tx_addr_5_ff()
+//TODO: check "illegal" 0x00 => 0x03 (zero length address ?)
+static int nrf24_write_tx_addr_5()
 {
-    char rx[6] = {0}, tx[6] = {0x20 | 0x10, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+    char rx[6] = {0}, tx[6] = {0x20 | 0x10, 0xA5, 0xA5, 0xA5, 0xA5, 0xA5};
     if(nrf24_write_reg(0x03, 0x03) || 6 != spiXfer(spi, tx, rx, 6)) { //address length=5, address=0xFF...0xFF
         perror(__func__);
         return 6;
@@ -53,7 +54,7 @@ static int nrf24_write_tx_addr_5_ff()
     return 0;
 }
 
-static int nrf24_write_tx_fifo_32_ff()
+static int nrf24_fill_tx_fifo_32()
 {
     char rx[33] = {0}, tx[33] = {0xA0};
     memset(tx + 1, 0xFF, 32);
@@ -72,6 +73,51 @@ static int nrf24_reuse_tx_pl()
         return 8;
     }
     return 0;
+}
+
+
+static int nrf24_clear_irq_flags()
+{
+   return  nrf24_write_reg(0x07, 0b01110000); //clear interrupt bits
+}
+
+static void nrf24_pulse_ce()
+{
+    gpioWrite(17, 1); //chip enable
+    usleep(10);
+    gpioWrite(17, 0); //chip disable
+}
+
+static void nrf24_wait_irq()
+{
+    while(running && gpioRead(25)) {
+        usleep(10);
+    }
+}
+
+static void nrf24_tx_setup(uint8_t channel, uint8_t power)
+{
+    channel &= 0b01111111;
+    power &= 0b11;
+
+    fprintf(stderr, "%s: using channel %d (%d Mhz) and power level %d\n", __argv__[1], channel, 2400 + channel, power);
+    nrf24_write_reg(0x00, 0b01110010); //no interrupts, no CRC, power up, TX
+    usleep(1500); //data sheet p.20, f.3
+    nrf24_write_reg(0x00, 0b01010010); //interrupt TX_DS, no CRC, power up, TX
+    nrf24_write_reg(0x01, 0b00000000); //no auto-acknowledgement
+    nrf24_write_reg(0x04, 0b00000000); //no auto-retransmit
+    nrf24_write_reg(0x05, (uint8_t)channel); //set channel (data sheet page 54)
+    nrf24_write_reg(0x06, 0b00010000 | (power << 1)); //PLL lock, data rate 1Mbps, set power, no LNA
+    nrf24_write_tx_addr_5();
+}
+
+static void nrf24_tx_send_block_32()
+{
+    nrf24_fill_tx_fifo_32();
+    nrf24_clear_irq_flags();
+    nrf24_pulse_ce();
+    nrf24_wait_irq();
+    nrf24_clear_irq_flags();
 }
 
 static int nrf24_print_regs()
@@ -169,33 +215,13 @@ static int f_tx()
         show_usage();
         return 1;
     }
-    int ch = atoi(__argv__[2]);
+    int chanel = atoi(__argv__[2]);
     int power = atoi(__argv__[3]);
-    if(ch < 0 || ch > 127)
-        ch = 0;
-    if(power < 0 || power > 3)
-        power = 3;
-    fprintf(stderr, "%s: using channel %d (%d Mhz) and power level %d\n", __argv__[1], ch, 2400 + ch, power);
-    nrf24_write_reg(0x00, 0b01110010); //no interrupts, no CRC, power up, TX
-    usleep(1500); //data sheet p.20, f.3
-    nrf24_write_reg(0x00, 0b01110010); //no interrupts, no CRC, power up, TX
-    nrf24_write_reg(0x01, 0b00000000); //no auto-acknowledgement
-    nrf24_write_reg(0x04, 0b00000000); //no auto-retransmit
-    nrf24_write_reg(0x05, (uint8_t)ch); //set channel (data sheet page 54)
-    nrf24_write_reg(0x06, 0b00010000 | (power << 1)); //PLL lock, data rate 1Mbps, set power, no LNA
-    nrf24_write_tx_addr_5_ff();
-    nrf24_write_tx_fifo_32_ff();
-    nrf24_write_reg(0x07, 0b01111110); //clear interrupt bits
-    gpioWrite(17, 1); //chip enable
-    usleep(100);
-    gpioWrite(17, 0); //chip disable
-    usleep(1000);
-    gpioWrite(17, 1); //chip enable
-    nrf24_reuse_tx_pl();
+    nrf24_tx_setup(chanel, power);
     while(running) {
-        usleep(1000);
+        nrf24_tx_send_block_32();
+        usleep(10000);
     }
-    gpioWrite(17, 0); //chip disable
     nrf24_write_reg(0x00, 0x00); //power down, TX
     return 0;
 }
@@ -213,6 +239,7 @@ static int spi_op(int (*f)())
     }
     gpioSetMode(17, PI_OUTPUT);
     gpioWrite(17, 0); //chip disable
+    gpioSetMode(25, PI_INPUT);
     usleep(10300); //data sheet p.20, f.3
     nrf24_print_regs();
     int res = f();
