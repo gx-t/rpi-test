@@ -245,7 +245,7 @@ static int f_rx()
         int col = 120;
         while(running && col --) {
             gpioWrite(17, 1); //chip enable
-            usleep(2000);
+            usleep(100);
             gpioWrite(17, 0); //chip disable
             uint8_t cd = 0;
             nrf24_read_reg(0x09, &cd); //carrier detect (data sheet page 55)
