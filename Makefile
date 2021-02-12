@@ -174,6 +174,8 @@ flac: 19-flac
 	sudo chmod +s 21-nrf24l01
 21-rel:
 	$(CC) $(REL) -o 21-nrf24l01 21-nrf24l01.c -lpigpio -lpthread
+	sudo chown root 21-nrf24l01
+	sudo chmod +s 21-nrf24l01
 
 clean:
 	rm -rf 00-mouse 01-keyboard 02-neon 03-camera 04-stream 05-neon 06-fb 07-chirp 08-resonance 09-noise 10-resonance 11-sweep 12-evol 13-lora-tx 14-lora-rx 15-udp 16-png-evol 17-raw-evol 18-ffmpeg-evol 19-ring 20-ll 21-nrf24l01 ./tags *.s rm mp4/*.mp4 flac/*.flac ogg/*.ogg
