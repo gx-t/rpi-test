@@ -107,7 +107,7 @@ static void nrf24_tx_setup(uint8_t channel, uint8_t power)
     nrf24_write_reg(0x01, 0b00000000); //no auto-acknowledgement
     nrf24_write_reg(0x04, 0b00000000); //no auto-retransmit
     nrf24_write_reg(0x05, (uint8_t)channel); //set channel (data sheet page 54)
-    nrf24_write_reg(0x06, 0b00010000 | (power << 1)); //PLL lock, data rate 1Mbps, set power, no LNA
+    nrf24_write_reg(0x06, 0b00000000 | (power << 1)); //data rate 1Mbps, set power, no LNA
     nrf24_write_tx_addr_5();
 }
 
@@ -142,6 +142,7 @@ static void show_usage()
     fprintf(stderr, "\t%s scan\n", *__argv__);
     fprintf(stderr, "\t%s carrier <channel> <power level>\n", *__argv__);
     fprintf(stderr, "\t%s tx <channel> <power level>\n", *__argv__);
+    fprintf(stderr, "\t%s rx <channel>\n", *__argv__);
     fprintf(stderr, "\t\t%s channel: 0-127\n", *__argv__);
     fprintf(stderr, "\t\t%s power level: 0-3\n", *__argv__);
 }
@@ -215,14 +216,44 @@ static int f_tx()
         show_usage();
         return 1;
     }
-    int chanel = atoi(__argv__[2]);
+    int channel = atoi(__argv__[2]);
     int power = atoi(__argv__[3]);
-    nrf24_tx_setup(chanel, power);
+    nrf24_tx_setup(channel, power);
     while(running) {
         nrf24_tx_send_block_32();
-        usleep(10000);
+        usleep(100000);
     }
     nrf24_write_reg(0x00, 0x00); //power down, TX
+    return 0;
+}
+
+static int f_rx()
+{
+    if(__argc__ != 3) {
+        show_usage();
+        return 1;
+    }
+    int channel = atoi(__argv__[2]);
+    nrf24_write_reg(0x00, 0x03); //power up, RX
+    usleep(1500); //data sheet p.20, f.3
+    nrf24_write_reg(0x01, 0x00); //Disable all auto acknowledge
+    nrf24_write_reg(0x04, 0x00); //Disable all auto retransmit
+    nrf24_write_reg(0x06, 0b00000001); //1Mbit/s, LNA on
+    channel &= 0b01111111;
+    nrf24_write_reg(0x05, channel); //set channel (data sheet page 54)
+    while(running) {
+        int col = 120;
+        while(running && col --) {
+            gpioWrite(17, 1); //chip enable
+            usleep(2000);
+            gpioWrite(17, 0); //chip disable
+            uint8_t cd = 0;
+            nrf24_read_reg(0x09, &cd); //carrier detect (data sheet page 55)
+            printf(cd & 1 ? "*" : ".");
+        }
+        printf("\n");
+    }
+    nrf24_write_reg(0x00, 0x01); //power down, RX
     return 0;
 }
 
@@ -264,6 +295,8 @@ int main(int argc, char* argv[])
         return spi_op(f_carrier);
     if(!strcmp("tx", argv[1]))
         return spi_op(f_tx);
+    if(!strcmp("rx", argv[1]))
+        return spi_op(f_rx);
     fprintf(stderr, "Unknown operation: %s\n", argv[1]);
     show_usage();
     return 2;
