@@ -248,7 +248,7 @@ static int f_tx()
     while(running) {
         //TODO: Check if power down after each block send requires setup for everything
         nrf24_tx_send_block();
-        usleep(100000);
+        sleep(1);
     }
     nrf24_write_reg(0x00, 0x00); //power down, TX
     return 0;
