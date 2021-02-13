@@ -101,9 +101,9 @@ static void nrf24_tx_setup(uint8_t channel, uint8_t power)
     power &= 0b11;
 
     fprintf(stderr, "%s: using channel %d (%d Mhz) and power level %d\n", __argv__[1], channel, 2400 + channel, power);
-    nrf24_write_reg(0x00, 0b01110010); //no interrupts, no CRC, power up, TX
+    nrf24_write_reg(0x00, 0b01111110); //no interrupts, CRC 2 bytes, power up, TX
     usleep(1500); //data sheet p.20, f.3
-    nrf24_write_reg(0x00, 0b01010010); //interrupt TX_DS, no CRC, power up, TX
+    nrf24_write_reg(0x00, 0b01011110); //interrupt TX_DS, CRC 2 bytes, power up, TX
     nrf24_write_reg(0x01, 0b00000000); //no auto-acknowledgement
     nrf24_write_reg(0x04, 0b00000000); //no auto-retransmit
     nrf24_write_reg(0x05, (uint8_t)channel); //set channel (data sheet page 54)
@@ -262,9 +262,9 @@ static int f_rx()
     }
     int channel = atoi(__argv__[2]);
     channel &= 0b01111111;
-    nrf24_write_reg(0x00, 0b01110011); //no interrupts, no CRC, power up, RX
+    nrf24_write_reg(0x00, 0b01111111); //no interrupts, CRC 2 bytes, power up, RX
     usleep(1500); //data sheet p.20, f.3
-    nrf24_write_reg(0x00, 0b00110011); //interrupt RX_DR, no CRC, power up, RX
+    nrf24_write_reg(0x00, 0b00111111); //interrupt RX_DR, CRC 2 bytes, power up, RX
     nrf24_write_reg(0x01, 0x00); //Disable all auto acknowledge
     nrf24_write_reg(0x02, 0b00000001); //Enable only data pipe 0
     nrf24_write_reg(0x04, 0x00); //Disable all auto retransmit
