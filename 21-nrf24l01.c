@@ -53,6 +53,17 @@ static int nrf24_write_reg(uint8_t reg, uint8_t val)
     return 0;
 }
 
+static int nrf24_read_status(uint8_t* val)
+{
+    char rx = 0, tx = 0x07;
+    if(1 != spiXfer(spi, &tx, &rx, 1)) {
+        perror(__func__);
+        return 4;
+    }
+    *val = rx;
+    return 0;
+}
+
 static int nrf24_clear_irq_flags()
 {
    return  nrf24_write_reg(0x07, 0b01110000); //clear interrupt bits
@@ -70,6 +81,16 @@ static void nrf24_wait_irq()
     while(running && gpioRead(25)) {
         usleep(10);
     }
+}
+
+static int nrf24_tx_flush_fifo()
+{
+    char rx = 0, tx = 0b11100001;
+    if(1 != spiXfer(spi, &tx, &rx, 1)) {
+        perror(__func__);
+        return 5;
+    }
+    return 0;
 }
 
 static int nrf24_tx_fill_fifo()
@@ -123,6 +144,41 @@ static void nrf24_tx_setup(uint8_t channel, uint8_t power, uint8_t bitrate, uint
     nrf24_tx_set_addr();
 }
 
+static void nrf24_tx_send_block()
+{
+    nrf24_tx_flush_fifo();
+    nrf24_tx_fill_fifo();
+    nrf24_clear_irq_flags();
+    nrf24_pulse_ce();
+    nrf24_wait_irq();
+    nrf24_clear_irq_flags();
+}
+
+static int nrf24_rx_flush_fifo()
+{
+    char rx = 0, tx = 0b11100010;
+    if(1 != spiXfer(spi, &tx, &rx, 1)) {
+        perror(__func__);
+        return 5;
+    }
+    return 0;
+}
+
+static int nrf24_rx_read_fifo()
+{
+    int i = 0;
+    char rx[33] = {0}, tx[33] = {0x61};
+    if(33 != spiXfer(spi, tx, rx, 33)) {
+        perror(__func__);
+        return 7;
+    }
+    for(i = 1; i < sizeof(rx); i ++) {
+        printf("%02X", rx[i]);
+    }
+    printf("\n");
+    return 0;
+}
+
 //TODO: check "illegal" 0x00 => 0x03 (zero length address ?)
 static int nrf24_rx_set_p0_addr()
 {
@@ -151,36 +207,17 @@ static void nrf24_rx_setup(uint8_t channel, uint8_t bitrate, uint8_t crc_mode)
     nrf24_write_reg(0x11, 0x20); //Number of bytes in RX payload in data pipe 0
 }
 
-static void nrf24_tx_send_block()
-{
-    nrf24_tx_fill_fifo();
-    nrf24_clear_irq_flags();
-    nrf24_pulse_ce();
-    nrf24_wait_irq();
-    nrf24_clear_irq_flags();
-}
-
-static int nrf24_rx_read_fifo()
-{
-    int i = 0;
-    char rx[33] = {0}, tx[33] = {0x61};
-    if(33 != spiXfer(spi, tx, rx, 33)) {
-        perror(__func__);
-        return 7;
-    }
-    for(i = 1; i < sizeof(rx); i ++) {
-        printf("%02X", rx[i]);
-    }
-    printf("\n");
-    return 0;
-}
-
 static void nrf24_rx_wait_data()
 {
+    uint8_t status = 0;
+    nrf24_rx_flush_fifo();
+    nrf24_clear_irq_flags();
     gpioWrite(17, 1); //chip enable
     nrf24_wait_irq();
     gpioWrite(17, 0); //chip disable
-    nrf24_clear_irq_flags();
+    nrf24_read_status(&status);
+    if(!(status & 0b01000000))
+        return;
     nrf24_rx_read_fifo();
 }
 
