@@ -12,6 +12,16 @@
 
 static int running = 1;
 
+const char* power_level_arr[] = {
+    "-18 db", "-12 db", "-6 db", "0 db"
+};
+const char* bitrate_arr[] = {
+    "1 Mbps", "2 Bbps"
+};
+const char* crc_mode_arr[] = {
+    "No CRC", "No CRC", "1 byte CRC", "2 bytes CRC"
+};
+
 static void ctrl_c(int sig) {
     signal(SIGINT, ctrl_c);
     running = 0;
@@ -95,16 +105,17 @@ static int nrf24_tx_set_addr()
     return 0;
 }
 
-static void nrf24_tx_setup(uint8_t channel, uint8_t power, uint8_t bitrate)
+static void nrf24_tx_setup(uint8_t channel, uint8_t power, uint8_t bitrate, uint8_t crc_mode)
 {
     channel &= 0b01111111;
     power &= 0b11;
     bitrate = !!bitrate;
+    crc_mode &= 0b11;
 
-    fprintf(stderr, "%s  %s: using channel %d (%d Mhz) and power level %d, bitrate %d\n", __argv__[0], __argv__[1], channel, 2400 + channel, power, bitrate);
-    nrf24_write_reg(0x00, 0b01111110); //no interrupts, CRC 2 bytes, power up, TX
+    fprintf(stderr, "%s  %s: using channel %d (%d Mhz) and power level %s, bitrate %s, %s\n", __argv__[0], __argv__[1], channel, 2400 + channel, power_level_arr[power], bitrate_arr[bitrate], crc_mode_arr[crc_mode]);
+    nrf24_write_reg(0x00, 0b01110010); //no interrupts, no CRC, power up, TX
     usleep(1500); //data sheet p.20, f.3
-    nrf24_write_reg(0x00, 0b01011110); //interrupt TX_DS, CRC 2 bytes, power up, TX
+    nrf24_write_reg(0x00, 0b01010010 | (crc_mode << 2)); //interrupt TX_DS, set CRC mode, power up, TX
     nrf24_write_reg(0x01, 0b00000000); //no auto-acknowledgement
     nrf24_write_reg(0x04, 0b00000000); //no auto-retransmit
     nrf24_write_reg(0x05, (uint8_t)channel); //set channel (data sheet page 54)
@@ -168,11 +179,12 @@ static void show_usage()
     fprintf(stderr, "Usage:\n");
     fprintf(stderr, "\t%s scan\n", __argv__[0]);
     fprintf(stderr, "\t%s carrier <channel> <power level>\n", __argv__[0]);
-    fprintf(stderr, "\t%s tx <channel> <power level> <bitrate>\n", __argv__[0]);
-    fprintf(stderr, "\t%s rx <channel> <bitrate>\n", __argv__[0]);
+    fprintf(stderr, "\t%s tx <channel> <power level> <bitrate> <crc mode>\n", __argv__[0]);
+    fprintf(stderr, "\t%s rx <channel> <bitrate> <crc mode>\n", __argv__[0]);
     fprintf(stderr, "\t\tchannel: 0-127\n");
-    fprintf(stderr, "\t\tpower level: 0-3\n");
-    fprintf(stderr, "\t\tbitrate: 0-1 (0 = 1Mbps, 1 = 2Mbps)\n");
+    fprintf(stderr, "\t\tpower level: 0-3 (%s, %s, %s, %s)\n", power_level_arr[0], power_level_arr[1], power_level_arr[2], power_level_arr[3]);
+    fprintf(stderr, "\t\tbitrate: 0-1 (%s, %s)\n", bitrate_arr[0], bitrate_arr[1]);
+    fprintf(stderr, "\t\tcrc mode: 0-3 (%s, %s, %s, %s)\n", crc_mode_arr[0], crc_mode_arr[1], crc_mode_arr[2], crc_mode_arr[3]);
 }
 
 //based on "nRF Performance Test Instructions nRF24L01+ Application Note" => 6 Receiver sensitivity
@@ -224,7 +236,7 @@ static int f_carrier()
         ch = 0;
     if(power < 0 || power > 3)
         power = 3;
-    fprintf(stderr, "%s %s: using channel %d (%d Mhz) and power level %d\n", __argv__[0], __argv__[1], ch, 2400 + ch, power);
+    fprintf(stderr, "%s %s: using channel %d (%d Mhz) and power level %s\n", __argv__[0], __argv__[1], ch, 2400 + ch, power_level_arr[power]);
     nrf24_write_reg(0x00, 0x02); //power up, TX
     usleep(1500); //data sheet p.20, f.3
     nrf24_write_reg(0x05, (uint8_t)ch); //set channel (data sheet page 54)
@@ -240,14 +252,15 @@ static int f_carrier()
 
 static int f_tx()
 {
-    if(__argc__ != 5) {
+    if(__argc__ != 6) {
         show_usage();
         return 1;
     }
     int channel = atoi(__argv__[2]);
     int power = atoi(__argv__[3]);
     int bitrate = atoi(__argv__[4]);
-    nrf24_tx_setup(channel, power, bitrate);
+    int crc_mode = atoi(__argv__[5]);
+    nrf24_tx_setup(channel, power, bitrate, crc_mode);
     while(running) {
         //TODO: Check if power down after each block send requires setup for everything
         nrf24_tx_send_block();
@@ -259,17 +272,19 @@ static int f_tx()
 
 static int f_rx()
 {
-    if(__argc__ != 4) {
+    if(__argc__ != 5) {
         show_usage();
         return 1;
     }
     int channel = atoi(__argv__[2]);
     int bitrate = atoi(__argv__[3]);
+    int crc_mode = atoi(__argv__[4]);
     channel &= 0b01111111;
     bitrate &= 1;
-    nrf24_write_reg(0x00, 0b01111111); //no interrupts, CRC 2 bytes, power up, RX
+    crc_mode &= 0b11;
+    nrf24_write_reg(0x00, 0b01110011); //no interrupts, no CRC, power up, RX
     usleep(1500); //data sheet p.20, f.3
-    nrf24_write_reg(0x00, 0b00111111); //interrupt RX_DR, CRC 2 bytes, power up, RX
+    nrf24_write_reg(0x00, 0b00110011 | (crc_mode << 2)); //interrupt RX_DR, set CRC mode, power up, RX
     nrf24_write_reg(0x01, 0x00); //Disable all auto acknowledge
     nrf24_write_reg(0x02, 0b00000001); //Enable only data pipe 0
     nrf24_write_reg(0x04, 0x00); //Disable all auto retransmit
