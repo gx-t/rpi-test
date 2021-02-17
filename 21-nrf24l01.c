@@ -123,15 +123,6 @@ static void nrf24_tx_setup(uint8_t channel, uint8_t power, uint8_t bitrate, uint
     nrf24_tx_set_addr();
 }
 
-static void nrf24_tx_send_block()
-{
-    nrf24_tx_fill_fifo();
-    nrf24_clear_irq_flags();
-    nrf24_pulse_ce();
-    nrf24_wait_irq();
-    nrf24_clear_irq_flags();
-}
-
 //TODO: check "illegal" 0x00 => 0x03 (zero length address ?)
 static int nrf24_rx_set_p0_addr()
 {
@@ -141,6 +132,32 @@ static int nrf24_rx_set_p0_addr()
         return 6;
     }
     return 0;
+}
+
+static void nrf24_rx_setup(uint8_t channel, uint8_t bitrate, uint8_t crc_mode)
+{
+    channel &= 0b01111111;
+    bitrate &= 1;
+    crc_mode &= 0b11;
+    nrf24_write_reg(0x00, 0b01110011); //no interrupts, no CRC, power up, RX
+    usleep(1500); //data sheet p.20, f.3
+    nrf24_write_reg(0x00, 0b00110011 | (crc_mode << 2)); //interrupt RX_DR, set CRC mode, power up, RX
+    nrf24_write_reg(0x01, 0x00); //Disable all auto acknowledge
+    nrf24_write_reg(0x02, 0b00000001); //Enable only data pipe 0
+    nrf24_write_reg(0x04, 0x00); //Disable all auto retransmit
+    nrf24_write_reg(0x05, channel); //set channel (data sheet page 54)
+    nrf24_write_reg(0x06, 0b00000001 | (bitrate << 3)); //No PLL lock, set bitrate, LNA on
+    nrf24_rx_set_p0_addr();
+    nrf24_write_reg(0x11, 0x20); //Number of bytes in RX payload in data pipe 0
+}
+
+static void nrf24_tx_send_block()
+{
+    nrf24_tx_fill_fifo();
+    nrf24_clear_irq_flags();
+    nrf24_pulse_ce();
+    nrf24_wait_irq();
+    nrf24_clear_irq_flags();
 }
 
 static int nrf24_rx_read_fifo()
@@ -156,6 +173,15 @@ static int nrf24_rx_read_fifo()
     }
     printf("\n");
     return 0;
+}
+
+static void nrf24_rx_wait_data()
+{
+    gpioWrite(17, 1); //chip enable
+    nrf24_wait_irq();
+    gpioWrite(17, 0); //chip disable
+    nrf24_clear_irq_flags();
+    nrf24_rx_read_fifo();
 }
 
 static int nrf24_print_regs()
@@ -279,25 +305,9 @@ static int f_rx()
     int channel = atoi(__argv__[2]);
     int bitrate = atoi(__argv__[3]);
     int crc_mode = atoi(__argv__[4]);
-    channel &= 0b01111111;
-    bitrate &= 1;
-    crc_mode &= 0b11;
-    nrf24_write_reg(0x00, 0b01110011); //no interrupts, no CRC, power up, RX
-    usleep(1500); //data sheet p.20, f.3
-    nrf24_write_reg(0x00, 0b00110011 | (crc_mode << 2)); //interrupt RX_DR, set CRC mode, power up, RX
-    nrf24_write_reg(0x01, 0x00); //Disable all auto acknowledge
-    nrf24_write_reg(0x02, 0b00000001); //Enable only data pipe 0
-    nrf24_write_reg(0x04, 0x00); //Disable all auto retransmit
-    nrf24_write_reg(0x05, channel); //set channel (data sheet page 54)
-    nrf24_write_reg(0x06, 0b00000001 | (bitrate << 3)); //No PLL lock, set bitrate, LNA on
-    nrf24_rx_set_p0_addr();
-    nrf24_write_reg(0x11, 0x20); //Number of bytes in RX payload in data pipe 0
+    nrf24_rx_setup(channel, bitrate, crc_mode);
     while(running) {
-        gpioWrite(17, 1); //chip enable
-        nrf24_wait_irq();
-        gpioWrite(17, 0); //chip disable
-        nrf24_clear_irq_flags();
-        nrf24_rx_read_fifo();
+        nrf24_rx_wait_data();
     }
     nrf24_write_reg(0x00, 0x01); //power down, RX
     return 0;
