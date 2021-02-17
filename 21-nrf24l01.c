@@ -95,19 +95,20 @@ static int nrf24_tx_set_addr()
     return 0;
 }
 
-static void nrf24_tx_setup(uint8_t channel, uint8_t power)
+static void nrf24_tx_setup(uint8_t channel, uint8_t power, uint8_t bitrate)
 {
     channel &= 0b01111111;
     power &= 0b11;
+    bitrate = !!bitrate;
 
-    fprintf(stderr, "%s: using channel %d (%d Mhz) and power level %d\n", __argv__[1], channel, 2400 + channel, power);
+    fprintf(stderr, "%s  %s: using channel %d (%d Mhz) and power level %d, bitrate %d\n", __argv__[0], __argv__[1], channel, 2400 + channel, power, bitrate);
     nrf24_write_reg(0x00, 0b01111110); //no interrupts, CRC 2 bytes, power up, TX
     usleep(1500); //data sheet p.20, f.3
     nrf24_write_reg(0x00, 0b01011110); //interrupt TX_DS, CRC 2 bytes, power up, TX
     nrf24_write_reg(0x01, 0b00000000); //no auto-acknowledgement
     nrf24_write_reg(0x04, 0b00000000); //no auto-retransmit
     nrf24_write_reg(0x05, (uint8_t)channel); //set channel (data sheet page 54)
-    nrf24_write_reg(0x06, 0b00000000 | (power << 1)); //No PLL lock, data rate 1Mbps, set power, no LNA
+    nrf24_write_reg(0x06, 0b00000000 | (power << 1) | (bitrate << 3)); //No PLL lock, set bitrate, set power, no LNA
     nrf24_tx_set_addr();
 }
 
@@ -165,12 +166,13 @@ static int nrf24_print_regs()
 static void show_usage()
 {
     fprintf(stderr, "Usage:\n");
-    fprintf(stderr, "\t%s scan\n", *__argv__);
-    fprintf(stderr, "\t%s carrier <channel> <power level>\n", *__argv__);
-    fprintf(stderr, "\t%s tx <channel> <power level>\n", *__argv__);
-    fprintf(stderr, "\t%s rx <channel>\n", *__argv__);
-    fprintf(stderr, "\t\t%s channel: 0-127\n", *__argv__);
-    fprintf(stderr, "\t\t%s power level: 0-3\n", *__argv__);
+    fprintf(stderr, "\t%s scan\n", __argv__[0]);
+    fprintf(stderr, "\t%s carrier <channel> <power level>\n", __argv__[0]);
+    fprintf(stderr, "\t%s tx <channel> <power level> <bitrate>\n", __argv__[0]);
+    fprintf(stderr, "\t%s rx <channel> <bitrate>\n", __argv__[0]);
+    fprintf(stderr, "\t\tchannel: 0-127\n");
+    fprintf(stderr, "\t\tpower level: 0-3\n");
+    fprintf(stderr, "\t\tbitrate: 0-1 (0 = 1Mbps, 1 = 2Mbps)\n");
 }
 
 //based on "nRF Performance Test Instructions nRF24L01+ Application Note" => 6 Receiver sensitivity
@@ -222,7 +224,7 @@ static int f_carrier()
         ch = 0;
     if(power < 0 || power > 3)
         power = 3;
-    fprintf(stderr, "%s: using channel %d (%d Mhz) and power level %d\n", __argv__[1], ch, 2400 + ch, power);
+    fprintf(stderr, "%s %s: using channel %d (%d Mhz) and power level %d\n", __argv__[0], __argv__[1], ch, 2400 + ch, power);
     nrf24_write_reg(0x00, 0x02); //power up, TX
     usleep(1500); //data sheet p.20, f.3
     nrf24_write_reg(0x05, (uint8_t)ch); //set channel (data sheet page 54)
@@ -238,13 +240,14 @@ static int f_carrier()
 
 static int f_tx()
 {
-    if(__argc__ != 4) {
+    if(__argc__ != 5) {
         show_usage();
         return 1;
     }
     int channel = atoi(__argv__[2]);
     int power = atoi(__argv__[3]);
-    nrf24_tx_setup(channel, power);
+    int bitrate = atoi(__argv__[4]);
+    nrf24_tx_setup(channel, power, bitrate);
     while(running) {
         //TODO: Check if power down after each block send requires setup for everything
         nrf24_tx_send_block();
@@ -256,12 +259,14 @@ static int f_tx()
 
 static int f_rx()
 {
-    if(__argc__ != 3) {
+    if(__argc__ != 4) {
         show_usage();
         return 1;
     }
     int channel = atoi(__argv__[2]);
+    int bitrate = atoi(__argv__[3]);
     channel &= 0b01111111;
+    bitrate &= 1;
     nrf24_write_reg(0x00, 0b01111111); //no interrupts, CRC 2 bytes, power up, RX
     usleep(1500); //data sheet p.20, f.3
     nrf24_write_reg(0x00, 0b00111111); //interrupt RX_DR, CRC 2 bytes, power up, RX
@@ -269,7 +274,7 @@ static int f_rx()
     nrf24_write_reg(0x02, 0b00000001); //Enable only data pipe 0
     nrf24_write_reg(0x04, 0x00); //Disable all auto retransmit
     nrf24_write_reg(0x05, channel); //set channel (data sheet page 54)
-    nrf24_write_reg(0x06, 0b00000001); //No PLL lock, 1Mbit/s, LNA on
+    nrf24_write_reg(0x06, 0b00000001 | (bitrate << 3)); //No PLL lock, set bitrate, LNA on
     nrf24_rx_set_p0_addr();
     nrf24_write_reg(0x11, 0x20); //Number of bytes in RX payload in data pipe 0
     while(running) {
