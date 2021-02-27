@@ -169,11 +169,11 @@ flac: 19-flac
 	$(CC) $(REL) -o 20-ll 20-ll.c
 
 21-deb:
-	$(CC) $(DEB) -o 21-nrf24l01 21-nrf24l01.c -lpigpio -lpthread
+	$(CC) $(DEB) -o 21-nrf24l01 21-nrf24l01.c -pthread -lpigpio
 	sudo chown root 21-nrf24l01
 	sudo chmod +s 21-nrf24l01
 21-rel:
-	$(CC) $(REL) -o 21-nrf24l01 21-nrf24l01.c -lpigpio -lpthread
+	$(CC) $(REL) -o 21-nrf24l01 21-nrf24l01.c -pthread -lpigpio
 	sudo chown root 21-nrf24l01
 	sudo chmod +s 21-nrf24l01
 
