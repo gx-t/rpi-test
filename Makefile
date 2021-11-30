@@ -1,5 +1,5 @@
 #set ARM gcc compiler/cross-compiler
-MAKEFLAGS+=-j 22
+MAKEFLAGS+=-j 23
 CC=gcc
 DEB=-Wall -g
 REL=-Wall -O3 -s
@@ -12,9 +12,9 @@ else
     MFLAGS=
 endif
 
-deb: 00-deb 01-deb 02-deb 03-deb 04-deb 05-deb 06-deb 07-deb 08-deb 09-deb 10-deb 11-deb 12-deb 13-deb 14-deb 15-deb 16-deb 17-deb 18-deb 19-deb 20-deb 21-deb
+deb: 00-deb 01-deb 02-deb 03-deb 04-deb 05-deb 06-deb 07-deb 08-deb 09-deb 10-deb 11-deb 12-deb 13-deb 14-deb 15-deb 16-deb 17-deb 18-deb 19-deb 20-deb 21-deb 22-deb
 
-rel: 00-rel 01-rel 02-rel 03-rel 04-rel 05-rel 06-rel 07-rel 08-rel 09-rel 10-rel 11-rel 12-rel 13-rel 14-rel 15-rel 16-rel 17-rel 18-rel 19-rel 20-rel 21-rel
+rel: 00-rel 01-rel 02-rel 03-rel 04-rel 05-rel 06-rel 07-rel 08-rel 09-rel 10-rel 11-rel 12-rel 13-rel 14-rel 15-rel 16-rel 17-rel 18-rel 19-rel 20-rel 21-rel 22-rel
 
 mp4: 16-mp4 17-mp4 18-mp4
 
@@ -177,8 +177,13 @@ flac: 19-flac
 	sudo chown root 21-nrf24l01
 	sudo chmod +s 21-nrf24l01
 
+22-deb:
+	$(CC) $(DEB) -o 22-temp-cgi 22-temp-cgi.c
+22-rel:
+	$(CC) $(REL) -o 22-temp-cgi 22-temp-cgi.c
+
 clean:
-	rm -rf 00-mouse 01-keyboard 02-neon 03-camera 04-stream 05-neon 06-fb 07-chirp 08-resonance 09-noise 10-resonance 11-sweep 12-evol 13-lora-tx 14-lora-rx 15-udp 16-png-evol 17-raw-evol 18-ffmpeg-evol 19-ring 20-ll 21-nrf24l01 ./tags *.s rm mp4/*.mp4 flac/*.flac ogg/*.ogg
+	rm -rf 00-mouse 01-keyboard 02-neon 03-camera 04-stream 05-neon 06-fb 07-chirp 08-resonance 09-noise 10-resonance 11-sweep 12-evol 13-lora-tx 14-lora-rx 15-udp 16-png-evol 17-raw-evol 18-ffmpeg-evol 19-ring 20-ll 21-nrf24l01 22-temp-cgi ./tags *.s rm mp4/*.mp4 flac/*.flac ogg/*.ogg
 
 tag:
 	ctags -R . /usr/include/ /opt/vc/include/ /usr/lib/gcc/arm-linux-gnueabihf/6/include
