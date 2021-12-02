@@ -1,6 +1,4 @@
 #include <unistd.h>
-#include <string.h>
-#include <stdio.h>
 
 int main(int argc, char **argv)
 {
@@ -32,6 +30,7 @@ int main(int argc, char **argv)
     close(STDIN_FILENO);
     dup2(fds[0], STDIN_FILENO);
     write(fds[1], cmd, sizeof(cmd) - 1);
+    close(fds[1]);
     execvp(args[0], args);
 
     return 0;
