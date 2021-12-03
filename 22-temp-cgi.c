@@ -4,61 +4,70 @@
 static int __argc__;
 static char** __argv__;
 
+static const char* sql_select_time_value = "select \"-- \"||time||\"  \"||value||\"\" from data";
+static const char* sql_order_by_time_desc = "order by time desc";
+
 static void sql_select_title(FILE* ff, const char* title)
 {
     fprintf(ff, "select \"\n- %s՝\";\n", title);
 }
 
+static void sql_start_end_date(FILE* ff)
+{
+    const char* sql = "select \'\n-- \'||min(time)||\'...\'||max(time)||\'\' from data;\n";
+    fprintf(ff, sql);
+}
+
 static void sql_global_min(FILE* ff)
 {
     sql_select_title(ff, "Բոլոր չափումների ամենացուրտը");
-    const char sql[] = "select \"-- \"||time||\"  \"||value||\"\" from data where value == (select min(value) from data) order by time desc;\n";
-    fwrite(sql, sizeof(sql) - 1, 1, ff);
+    const char* cond = "where value == (select min(value) from data)";
+    fprintf(ff, "%s %s %s;\n", sql_select_time_value, cond, sql_order_by_time_desc);
 }
 
 static void sql_global_max(FILE* ff)
 {
     sql_select_title(ff, "Բոլոր չափումների ամենատաքը");
-    const char sql[] = "select \"-- \"||time||\"  \"||value||\"\" from data where value == (select max(value) from data) order by time desc;\n";
-    fwrite(sql, sizeof(sql) - 1, 1, ff);
+    const char* cond = "where value == (select max(value) from data)";
+    fprintf(ff, "%s %s %s;\n", sql_select_time_value, cond, sql_order_by_time_desc);
 }
 
 static void sql_24_hour_min(FILE* ff)
 {
     sql_select_title(ff, "Վերջին 24 ժամի ամենացուրտը");
-    const char sql[] = "select \"-- \"||time||\"  \"||value||\"\" from data where value == (select min(value) from data where time > datetime(\'now\', \'localtime\', \'-1 day\')) and time > datetime(\'now\', \'localtime\', \'-1 day\') order by time desc;\n";
-    fwrite(sql, sizeof(sql) - 1, 1, ff);
+    const char* cond = "where value == (select min(value) from data where time > datetime(\'now\', \'localtime\', \'-1 day\')) and time > datetime(\'now\', \'localtime\', \'-1 day\')";
+    fprintf(ff, "%s %s %s;\n", sql_select_time_value, cond, sql_order_by_time_desc);
 }
 
 static void sql_24_hour_max(FILE* ff)
 {
     sql_select_title(ff, "Վերջին 24 ժամի ամենատաքը");
-    const char sql[] = "select \"-- \"||time||\"  \"||value||\"\" from data where value == (select max(value) from data where time > datetime(\'now\', \'localtime\', \'-1 day\')) and time > datetime(\'now\', \'localtime\', \'-1 day\') order by time desc;\n";
-    fwrite(sql, sizeof(sql) - 1, 1, ff);
+    const char* cond = "where value == (select max(value) from data where time > datetime(\'now\', \'localtime\', \'-1 day\')) and time > datetime(\'now\', \'localtime\', \'-1 day\')";
+    fprintf(ff, "%s %s %s;\n", sql_select_time_value, cond, sql_order_by_time_desc);
 }
 
 static void sql_24_hour_negative(FILE* ff)
 {
     sql_select_title(ff, "Վերջին 24 ժամի 0-ից ցածրները");
-    const char sql[] = "select \"-- \"||time||\"  \"||value||\"\" from data where value < 0 and time > datetime(\'now\', \'localtime\', \'-1 day\') order by time desc;\n";
-    fwrite(sql, sizeof(sql) - 1, 1, ff);
+    const char* cond = "where value < 0 and time > datetime(\'now\', \'localtime\', \'-1 day\')";
+    fprintf(ff, "%s %s %s;\n", sql_select_time_value, cond, sql_order_by_time_desc);
 }
 
 static void sql_24_hour_all(FILE* ff)
 {
     sql_select_title(ff, "Վերջին 24 ժամի բոլոր չափումները");
-    const char sql[] = "select \"-- \"||time||\"  \"||value||\"\" from data where time > datetime(\'now\', \'localtime\', \'-1 day\') order by time desc;\n";
-    fwrite(sql, sizeof(sql) - 1, 1, ff);
+    const char* cond = "where time > datetime(\'now\', \'localtime\', \'-1 day\')";
+    fprintf(ff, "%s %s %s;\n", sql_select_time_value, cond, sql_order_by_time_desc);
 }
 
 static void sql_quit(FILE* ff)
 {
-    const char sql[] = ".quit\n";
-    fwrite(sql, sizeof(sql) - 1, 1, ff);
+    fprintf(ff, ".quit\n");
 }
 
 static void f_dump_general(FILE* ff)
 {
+    sql_start_end_date(ff);
     sql_global_min(ff);
     sql_global_max(ff);
     sql_24_hour_min(ff);
