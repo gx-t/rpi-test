@@ -76,13 +76,9 @@ static void f_dump_general(FILE* ff)
     sql_24_hour_all(ff);
 }
 
-static void prepare_sql(void (*proc)(FILE*))
+static void prepare_sql(char* buff, size_t buff_size, void (*proc)(FILE*))
 {
-    int fds[2] = {0, 0};
-    pipe(fds);
-    close(STDIN_FILENO);
-    dup2(fds[0], STDIN_FILENO);
-    FILE* ff = fdopen(fds[1], "a");
+    FILE* ff = fmemopen(buff, buff_size, "w");
     proc(ff);
     sql_quit(ff);
     fclose(ff);
@@ -96,11 +92,12 @@ static void http_header()
 
 int main(int argc, char **argv)
 {
+    char arg_buff[0x1000];
     __argc__ = argc;
     __argv__ = argv;
-    char *const sql_args[] = { "sqlite3", "-batch", "/home/pi/data/sensor.db", NULL };
     http_header();
-    prepare_sql(f_dump_general);
+    prepare_sql(arg_buff, sizeof(arg_buff), f_dump_general);
+    char *const sql_args[] = { "sqlite3", "-batch", "/home/pi/data/sensor.db", arg_buff, NULL };
     execvp(sql_args[0], sql_args);
 
     return 0;
