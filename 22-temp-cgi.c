@@ -60,11 +60,6 @@ static void sql_24_hour_all(FILE* ff)
     fprintf(ff, "%s %s %s;\n", sql_select_time_value, cond, sql_order_by_time_desc);
 }
 
-static void sql_quit(FILE* ff)
-{
-    fprintf(ff, ".quit\n");
-}
-
 static void f_dump_general(FILE* ff)
 {
     sql_start_end_date(ff);
@@ -80,7 +75,6 @@ static void prepare_sql(char* buff, size_t buff_size, void (*proc)(FILE*))
 {
     FILE* ff = fmemopen(buff, buff_size, "w");
     proc(ff);
-    sql_quit(ff);
     fclose(ff);
 }
 
