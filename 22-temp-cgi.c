@@ -18,6 +18,13 @@ static void sql_start_end_date(FILE* ff)
     fprintf(ff, sql);
 }
 
+static void sql_last(FILE* ff)
+{
+    sql_title(ff, "Վերջի չափումը");
+    const char* cond = "order by rowid desc limit 1";
+    fprintf(ff, "%s %s;\n", sql_select_time_value, cond);
+}
+
 static void sql_global_min(FILE* ff)
 {
     sql_title(ff, "Բոլոր չափումների ամենացուրտը");
@@ -34,28 +41,28 @@ static void sql_global_max(FILE* ff)
 
 static void sql_24_hour_min(FILE* ff)
 {
-    sql_title(ff, "Վերջին 24 ժամի ամենացուրտը");
+    sql_title(ff, "Վերջի 24 ժամի ամենացուրտը");
     const char* cond = "where value == (select min(value) from data where time > datetime('now', 'localtime', '-1 day')) and time > datetime('now', 'localtime', '-1 day')";
     fprintf(ff, "%s %s %s;\n", sql_select_time_value, cond, sql_order_by_time_desc);
 }
 
 static void sql_24_hour_max(FILE* ff)
 {
-    sql_title(ff, "Վերջին 24 ժամի ամենատաքը");
+    sql_title(ff, "Վերջի 24 ժամի ամենատաքը");
     const char* cond = "where value == (select max(value) from data where time > datetime('now', 'localtime', '-1 day')) and time > datetime('now', 'localtime', '-1 day')";
     fprintf(ff, "%s %s %s;\n", sql_select_time_value, cond, sql_order_by_time_desc);
 }
 
 static void sql_24_hour_negative(FILE* ff)
 {
-    sql_title(ff, "Վերջին 24 ժամի 0-ից ցածրները");
+    sql_title(ff, "Վերջի 24 ժամի 0-ից ցածրները");
     const char* cond = "where value < 0 and time > datetime('now', 'localtime', '-1 day')";
     fprintf(ff, "%s %s %s;\n", sql_select_time_value, cond, sql_order_by_time_desc);
 }
 
 static void sql_24_hour_all(FILE* ff)
 {
-    sql_title(ff, "Վերջին 24 ժամի բոլոր չափումները");
+    sql_title(ff, "Վերջի 24 ժամի բոլոր չափումները");
     const char* cond = "where time > datetime('now', 'localtime', '-1 day')";
     fprintf(ff, "%s %s %s;\n", sql_select_time_value, cond, sql_order_by_time_desc);
 }
@@ -63,6 +70,7 @@ static void sql_24_hour_all(FILE* ff)
 static void f_dump_general(FILE* ff)
 {
     sql_start_end_date(ff);
+    sql_last(ff);
     sql_global_min(ff);
     sql_global_max(ff);
     sql_24_hour_min(ff);
