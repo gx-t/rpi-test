@@ -11,7 +11,7 @@ static int run_under_clock(const char* label, void (*proc)())
     t1 = clock();
     proc();
     t2 = clock();
-    printf("%fs\n", label, (double)(t2 - t1) / CLOCKS_PER_SEC);
+    printf("%f sec\n", (double)(t2 - t1) / CLOCKS_PER_SEC);
     return 0;
 }
 
