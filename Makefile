@@ -183,7 +183,7 @@ flac: 19-flac
 	$(CC) $(REL) -o 22-temp-cgi 22-temp-cgi.c
 
 23-deb:
-	$(CC) $(DEB) $(MFLAGS) -o 23-bench 23-bench.c
+	$(CC) -g $(MFLAGS) -o 23-bench 23-bench.c
 23-rel:
 	$(CC) -O3 -s $(MFLAGS) -o 23-bench 23-bench.c
 
