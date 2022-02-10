@@ -12,6 +12,7 @@ static int run_under_clock(const char* label, void (*proc)())
 {
     clock_t t1, t2;
     printf("%s...", label);
+    fflush(stdout);
     t1 = clock();
     proc();
     t2 = clock();
