@@ -183,9 +183,9 @@ flac: 19-flac
 	$(CC) $(REL) -o 22-temp-cgi 22-temp-cgi.c
 
 23-deb:
-	$(CC) -g -o 23-bench 23-bench.c
+	$(CC) $(DEB) $(MFLAGS) -o 23-bench 23-bench.c
 23-rel:
-	$(CC) -O3 -s -o 23-bench 23-bench.c
+	$(CC) -O3 -s $(MFLAGS) -o 23-bench 23-bench.c
 
 clean:
 	rm -rf 00-mouse 01-keyboard 02-neon 03-camera 04-stream 05-neon 06-fb 07-chirp 08-resonance 09-noise 10-resonance 11-sweep 12-evol 13-lora-tx 14-lora-rx 15-udp 16-png-evol 17-raw-evol 18-ffmpeg-evol 19-ring 20-ll 21-nrf24l01 22-temp-cgi 23-bench ./tags *.s rm mp4/*.mp4 flac/*.flac ogg/*.ogg
