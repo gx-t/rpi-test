@@ -75,6 +75,21 @@ static void bench_neon_32x4()
     d1 = c;
     d2 = s;
 }
+
+static void bench_float_32x4()
+{
+    volatile float32x4_t d1, d2;
+    float32x4_t c = {1, 1, 1, 1}, s = {0, 0, 0, 0};
+    const float32x4_t f = {FREQ_F32(1680.0), FREQ_F32(1986), FREQ_F32(2903), FREQ_F32(305.6)};
+    uint32_t i = 99999999;
+    while(i --)
+    {
+        c += s * f;
+        s -= c * f;
+    }
+    d1 = c;
+    d2 = s;
+}
 #endif // __ARM_ARCH
 
 int main()
@@ -84,6 +99,7 @@ int main()
     run_under_clock("uin64, recursion", bench_uint64_fibonacci);
 #ifdef __ARM_ARCH
     run_under_clock("neon 32x4", bench_neon_32x4);
+    run_under_clock("float 32x4", bench_float_32x4);
 #endif // __ARM_ARCH
     return 0;
 }
