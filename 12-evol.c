@@ -147,7 +147,7 @@ static void qe_evol_reverse(double x1, double x2, unsigned gen_count, unsigned p
 
 static int cmd_qe_evol(int argc, char* argv[]) {
     if(argc != 9) {
-        fprintf(stderr, "Usage: %s a b c <generation count> <poplation count> <min value> <max value> <mutation>\n", argv[0]);
+        fprintf(stderr, "Usage: %s a b c <generation count> <population count> <min value> <max value> <mutation>\n", argv[0]);
         fprintf(stderr, "Example: 2 -4 -2 256 256 -100.0 100.0 1.0\n");
         return 3;
     }
@@ -173,7 +173,7 @@ static int cmd_qe_evol(int argc, char* argv[]) {
 
 static int cmd_qe_evol_reverse(int argc, char* argv[]) {
     if(argc != 8) {
-        fprintf(stderr, "Usage: %s x1 x2 <generation count> <poplation count> <min value> <max value> <mutation>\n", argv[0]);
+        fprintf(stderr, "Usage: %s x1 x2 <generation count> <population count> <min value> <max value> <mutation>\n", argv[0]);
         fprintf(stderr, "Example: 1 2 256 256 -300 300 55\n");
         return 3;
     }
