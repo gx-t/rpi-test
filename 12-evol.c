@@ -20,6 +20,11 @@ static double qe_calc_fitness(double a, double b, double c, double x)
     return v * v;
 }
 
+static double qe_calc_fitness_2(double a, double b, double c, double x1, double x2)
+{
+    return qe_calc_fitness(a, b, c, x1) + qe_calc_fitness(a, b, c, x2);
+}
+
 static int qe_fitness_cmp(const double** f1, const double** f2)
 {
     if(**f1 > **f2)
@@ -45,7 +50,7 @@ static void qe_calc_and_fill_fitness(struct XF* xf, struct XF** idx, double a, d
     }
 }
 
-static void qe_calc_and_fill_fitness_reverse(struct ABCF* xf, struct ABCF** idx, double x, unsigned count, double min, double max)
+static void qe_calc_and_fill_fitness_reverse(struct ABCF* xf, struct ABCF** idx, double x1, double x2, unsigned count, double min, double max)
 {
     double step = (max - min) / count;
     double val = min;
@@ -53,7 +58,7 @@ static void qe_calc_and_fill_fitness_reverse(struct ABCF* xf, struct ABCF** idx,
     while(count --) {
         *idx ++ = xf;
         xf->a = xf->b = xf->c = val;
-        xf->fit = qe_calc_fitness(xf->a, xf->b, xf->c, x);
+        xf->fit = qe_calc_fitness_2(xf->a, xf->b, xf->c, x1, x2);
         xf ++;
         val += step;
     }
@@ -71,7 +76,7 @@ static void qe_reproduce_and_mutate_x(struct XF** idx, double a, double b, doubl
     }
 }
 
-static void qe_reproduce_and_mutate_abc(struct ABCF** idx, double x, unsigned count, double mut)
+static void qe_reproduce_and_mutate_abc(struct ABCF** idx, double x1, double x2, unsigned count, double mut)
 {
     struct ABCF** idx1 = idx + count;
 
@@ -79,7 +84,7 @@ static void qe_reproduce_and_mutate_abc(struct ABCF** idx, double x, unsigned co
         (*idx1)->a = (*idx)->a - mut + mut * 2.0 * drand48();
         (*idx1)->b = (*idx)->b - mut + mut * 2.0 * drand48();
         (*idx1)->c = (*idx)->c - mut + mut * 2.0 * drand48();
-        (*idx1)->fit = qe_calc_fitness((*idx)->a, (*idx)->b, (*idx)->c, x);
+        (*idx1)->fit = qe_calc_fitness_2((*idx)->a, (*idx)->b, (*idx)->c, x1, x2);
         idx ++;
         idx1 ++;
     }
@@ -124,14 +129,14 @@ static void qe_evol(double a, double b, double c, unsigned gen_count, unsigned p
     printf("Final mutation:\t\t\t%lf\nMutation decrease factor:\t%lf\n", mut, MUTATION_DECREASE_FACTOR);
 }
 
-static void qe_evol_reverse(double x, unsigned gen_count, unsigned pop_count, double min, double max, double mut)
+static void qe_evol_reverse(double x1, double x2, unsigned gen_count, unsigned pop_count, double min, double max, double mut)
 {
     struct ABCF pop[pop_count * 2];
     struct ABCF* index[pop_count * 2];
 
-    qe_calc_and_fill_fitness_reverse(pop, index, x, pop_count * 2, min, max);
+    qe_calc_and_fill_fitness_reverse(pop, index, x1, x2, pop_count * 2, min, max);
     while(gen_count --) {
-        qe_reproduce_and_mutate_abc(index, x, pop_count, mut);
+        qe_reproduce_and_mutate_abc(index, x1, x2, pop_count, mut);
         qsort(index, pop_count * 2, sizeof(index[0]), (int (*)(const void*, const void*))qe_fitness_cmp);
         mut /= MUTATION_DECREASE_FACTOR;
     }
@@ -142,7 +147,7 @@ static void qe_evol_reverse(double x, unsigned gen_count, unsigned pop_count, do
 
 static int cmd_qe_evol(int argc, char* argv[]) {
     if(argc != 9) {
-        fprintf(stderr, "Usage: %s a, b, c, <generation count> <poplation count> <min value> <max value> <mutation>\n", argv[0]);
+        fprintf(stderr, "Usage: %s a b c <generation count> <poplation count> <min value> <max value> <mutation>\n", argv[0]);
         fprintf(stderr, "Example: 2 -4 -2 256 256 -100.0 100.0 1.0\n");
         return 3;
     }
@@ -167,26 +172,27 @@ static int cmd_qe_evol(int argc, char* argv[]) {
 }
 
 static int cmd_qe_evol_reverse(int argc, char* argv[]) {
-    if(argc != 7) {
-        fprintf(stderr, "Usage: %s x, <generation count> <poplation count> <min value> <max value> <mutation>\n", argv[0]);
-        fprintf(stderr, "Example: 1 256 256 -3 3 1\n");
+    if(argc != 8) {
+        fprintf(stderr, "Usage: %s x1 x2 <generation count> <poplation count> <min value> <max value> <mutation>\n", argv[0]);
+        fprintf(stderr, "Example: 1 2 256 256 -300 300 55\n");
         return 3;
     }
     argc --;
     argv ++;
 
-    double x, min, max, mut;
+    double x1, x2, min, max, mut;
     unsigned gen_count, pop_count;
-    if(1 != sscanf(argv[0], "%lf", &x)
-            || 1 != sscanf(argv[1], "%u", &gen_count)
-            || 1 != sscanf(argv[2], "%u", &pop_count)
-            || 1 != sscanf(argv[3], "%lf", &min)
-            || 1 != sscanf(argv[4], "%lf", &max)
-            || 1 != sscanf(argv[5], "%lf", &mut)) {
+    if(1 != sscanf(argv[0], "%lf", &x1)
+            || 1 != sscanf(argv[1], "%lf", &x2)
+            || 1 != sscanf(argv[2], "%u", &gen_count)
+            || 1 != sscanf(argv[3], "%u", &pop_count)
+            || 1 != sscanf(argv[4], "%lf", &min)
+            || 1 != sscanf(argv[5], "%lf", &max)
+            || 1 != sscanf(argv[6], "%lf", &mut)) {
         fprintf(stderr, "Invalid value\n");
         return 4;
     }
-    qe_evol_reverse(x, gen_count, pop_count, min, max, mut);
+    qe_evol_reverse(x1, x2, gen_count, pop_count, min, max, mut);
     return 0;
 }
 
