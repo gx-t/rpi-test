@@ -71,11 +71,11 @@ static void f_dump_general(FILE* ff)
 {
     sql_start_end_date(ff);
     sql_last(ff);
-    sql_global_min(ff);
-    sql_global_max(ff);
     sql_24_hour_min(ff);
     sql_24_hour_max(ff);
-    sql_24_hour_negative(ff);
+    sql_global_min(ff);
+    sql_global_max(ff);
+//    sql_24_hour_negative(ff);
     sql_24_hour_all(ff);
 }
 

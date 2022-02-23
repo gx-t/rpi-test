@@ -178,9 +178,9 @@ flac: 19-flac
 	sudo chmod +s 21-nrf24l01
 
 22-deb:
-	$(CC) $(DEB) -o 22-temp-cgi 22-temp-cgi.c
+	$(CC) $(DEB) -Wno-unused-function -o 22-temp-cgi 22-temp-cgi.c
 22-rel:
-	$(CC) $(REL) -o 22-temp-cgi 22-temp-cgi.c
+	$(CC) $(REL) -Wno-unused-function -o 22-temp-cgi 22-temp-cgi.c
 
 23-deb:
 	$(CC) -g $(MFLAGS) -o 23-bench 23-bench.c
