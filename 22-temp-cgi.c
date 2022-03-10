@@ -27,14 +27,14 @@ static void sql_last(FILE* ff)
 
 static void sql_global_min(FILE* ff)
 {
-    sql_title(ff, "Բոլոր չափումներից ամենացուրտը");
+    sql_title(ff, "Բոլոր չափումների ամենացուրտը");
     const char* cond = "where value == (select min(value) from data)";
     fprintf(ff, "%s %s %s;\n", sql_select_time_value, cond, sql_order_by_time_desc);
 }
 
 static void sql_global_max(FILE* ff)
 {
-    sql_title(ff, "Բոլոր չափումներից ամենատաքը");
+    sql_title(ff, "Բոլոր չափումների ամենատաքը");
     const char* cond = "where value == (select max(value) from data)";
     fprintf(ff, "%s %s %s;\n", sql_select_time_value, cond, sql_order_by_time_desc);
 }
