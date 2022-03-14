@@ -39,28 +39,28 @@ static void sql_global_max(FILE* ff)
     fprintf(ff, "%s %s %s;\n", sql_select_time_value, cond, sql_order_by_time_desc);
 }
 
-static void sql_24_hour_min(FILE* ff)
+static void sql_last_24_hours_min(FILE* ff)
 {
     sql_title(ff, "24 ժամի ամենացուրտը");
     const char* cond = "where value == (select min(value) from data where time > datetime('now', 'localtime', '-1 day')) and time > datetime('now', 'localtime', '-1 day')";
     fprintf(ff, "%s %s %s;\n", sql_select_time_value, cond, sql_order_by_time_desc);
 }
 
-static void sql_24_hour_max(FILE* ff)
+static void sql_last_24_hours_max(FILE* ff)
 {
     sql_title(ff, "24 ժամի ամենատաքը");
     const char* cond = "where value == (select max(value) from data where time > datetime('now', 'localtime', '-1 day')) and time > datetime('now', 'localtime', '-1 day')";
     fprintf(ff, "%s %s %s;\n", sql_select_time_value, cond, sql_order_by_time_desc);
 }
 
-static void sql_24_hour_negative(FILE* ff)
+static void sql_last_24_hours_negative(FILE* ff)
 {
     sql_title(ff, "24 ժամի 0-ից ցածրները");
     const char* cond = "where value < 0 and time > datetime('now', 'localtime', '-1 day')";
     fprintf(ff, "%s %s %s;\n", sql_select_time_value, cond, sql_order_by_time_desc);
 }
 
-static void sql_24_hour_all(FILE* ff)
+static void sql_last_24_hours_all(FILE* ff)
 {
     sql_title(ff, "24 ժամի բոլոր չափումները");
     const char* cond = "where time > datetime('now', 'localtime', '-1 day')";
@@ -71,12 +71,12 @@ static void f_dump_general(FILE* ff)
 {
     sql_start_end_date(ff);
     sql_last(ff);
-    sql_24_hour_min(ff);
-    sql_24_hour_max(ff);
+    sql_last_24_hours_min(ff);
+    sql_last_24_hours_max(ff);
     sql_global_min(ff);
     sql_global_max(ff);
-//    sql_24_hour_negative(ff);
-    sql_24_hour_all(ff);
+//    sql_last_24_hours_negative(ff);
+    sql_last_24_hours_all(ff);
 }
 
 static void prepare_sql(char* buff, size_t buff_size, void (*proc)(FILE*))
