@@ -68,11 +68,9 @@ static void sql_24_hour_all(FILE* ff, int offset)
 static void f_dump_general(FILE* ff)
 {
     char* query = getenv("QUERY_STRING");
-    int offset = 0;
-    if(query)
-        offset = atoi(query);
-    if(offset)
+    if(query && *query)
     {
+        int offset = atoi(query);
         sql_24_hour_min(ff, offset);
         sql_24_hour_max(ff, offset);
         sql_24_hour_all(ff, offset);
