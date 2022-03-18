@@ -1,12 +1,39 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <time.h>
+#include <openssl/bn.h>
 #ifdef __ARM_ARCH
 #include <arm_neon.h>
 #endif // __ARM_ARCH
 
 #define PI              
 #define FREQ_F32(f_)	((f_) * 2 * 3.14159265358979323846 / 96000)
+
+static int run_under_clock_in_loop(const char* label, void (*proc)(), uint32_t run_count)
+{
+    double min_time = 9e9;
+    double max_time = 0;
+    double avg_time = 0;
+    uint32_t i;
+    printf("%s %d times (min/max/avg)...", label, run_count);
+    fflush(stdout);
+    for(i = 0; i < run_count; i ++)
+    {
+        clock_t t1, t2;
+        double curr_time;
+        t1 = clock();
+        proc();
+        t2 = clock();
+        curr_time = (double)(t2 - t1) / CLOCKS_PER_SEC;
+        avg_time += curr_time;
+        if(curr_time < min_time)
+            min_time = curr_time;
+        if(curr_time > max_time)
+            max_time = curr_time;
+    }
+    avg_time /= run_count;
+    printf("%f/%f/%f sec\n", min_time, max_time, avg_time);
+}
 
 static int run_under_clock(const char* label, void (*proc)())
 {
@@ -92,11 +119,25 @@ static void bench_float_32x4()
 }
 #endif // __ARM_ARCH
 
+static void bench_openssl_gen_prime()
+{
+    BIGNUM* p = BN_new();
+    volatile BIGNUM* vp = NULL;
+    if(!BN_generate_prime_ex(p, 1024, 0, NULL, NULL, NULL))
+    {
+        fprintf(stderr, "Error generating prime number\n");
+        return;
+    }
+    vp = p;
+    BN_free(p);
+}
+
 int main()
 {
     run_under_clock("float", bench_float);
     run_under_clock("double", bench_double);
     run_under_clock("uin64, recursion", bench_uint64_fibonacci);
+    run_under_clock_in_loop("openssl 1024 bit random prime", bench_openssl_gen_prime, 32);
 #ifdef __ARM_ARCH
     run_under_clock("neon 32x4", bench_neon_32x4);
     run_under_clock("float 32x4", bench_float_32x4);
