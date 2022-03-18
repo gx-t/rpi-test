@@ -50,17 +50,14 @@ static void qe_calc_and_fill_fitness(struct XF* xf, struct XF** idx, double a, d
     }
 }
 
-static void qe_calc_and_fill_fitness_reverse(struct ABCF* xf, struct ABCF** idx, double x1, double x2, unsigned count, double min, double max)
+static void qe_init_pop_reverse(struct ABCF* xf, struct ABCF** idx, double x1, double x2, unsigned count, double center)
 {
-    double step = (max - min) / count;
-    double val = min;
-
+    double fit = qe_calc_fitness_2(center, center, center, x1, x2);
     while(count --) {
         *idx ++ = xf;
-        xf->a = xf->b = xf->c = val;
-        xf->fit = qe_calc_fitness_2(xf->a, xf->b, xf->c, x1, x2);
+        xf->a = xf->b = xf->c = center;
+        xf->fit = fit;
         xf ++;
-        val += step;
     }
 }
 
@@ -84,7 +81,7 @@ static void qe_reproduce_and_mutate_abc(struct ABCF** idx, double x1, double x2,
         (*idx1)->a = (*idx)->a - mut + mut * 2.0 * drand48();
         (*idx1)->b = (*idx)->b - mut + mut * 2.0 * drand48();
         (*idx1)->c = (*idx)->c - mut + mut * 2.0 * drand48();
-        (*idx1)->fit = qe_calc_fitness_2((*idx)->a, (*idx)->b, (*idx)->c, x1, x2);
+        (*idx1)->fit = qe_calc_fitness_2((*idx1)->a, (*idx1)->b, (*idx1)->c, x1, x2);
         idx ++;
         idx1 ++;
     }
@@ -129,20 +126,23 @@ static void qe_evol(double a, double b, double c, unsigned gen_count, unsigned p
     printf("Final mutation:\t\t\t%lf\nMutation decrease factor:\t%lf\n", mut, MUTATION_DECREASE_FACTOR);
 }
 
-static void qe_evol_reverse(double x1, double x2, unsigned gen_count, unsigned pop_count, double min, double max, double mut)
+static void qe_evol_reverse(double x1, double x2, unsigned pop_count, double center, double delta)
 {
     struct ABCF pop[pop_count * 2];
     struct ABCF* index[pop_count * 2];
 
-    qe_calc_and_fill_fitness_reverse(pop, index, x1, x2, pop_count * 2, min, max);
-    while(gen_count --) {
+    double mut = delta;
+    unsigned gen_count = 0;
+    qe_init_pop_reverse(pop, index, x1, x2, pop_count * 2, center);
+    while(0.001 < (*index)->fit) {
         qe_reproduce_and_mutate_abc(index, x1, x2, pop_count, mut);
         qsort(index, pop_count * 2, sizeof(index[0]), (int (*)(const void*, const void*))qe_fitness_cmp);
-        mut /= MUTATION_DECREASE_FACTOR;
+        mut /= 1.1;
+        gen_count ++;
     }
 
-    qe_print_abc_and_fitness_reverse(index, pop_count);
-    printf("Final mutation:\t\t\t%lf\nMutation decrease factor:\t%lf\n", mut, MUTATION_DECREASE_FACTOR);
+    qe_print_abc_and_fitness_reverse(index, 1);
+    printf("Generation count: %u\n", gen_count);
 }
 
 static int cmd_qe_evol(int argc, char* argv[]) {
@@ -172,27 +172,25 @@ static int cmd_qe_evol(int argc, char* argv[]) {
 }
 
 static int cmd_qe_evol_reverse(int argc, char* argv[]) {
-    if(argc != 8) {
-        fprintf(stderr, "Usage: %s x1 x2 <generation count> <population count> <min value> <max value> <mutation>\n", argv[0]);
-        fprintf(stderr, "Example: 1 2 256 256 -300 300 55\n");
+    if(argc != 6) {
+        fprintf(stderr, "Usage: %s x1 x2 <population count> <central value> <delta>\n", argv[0]);
+        fprintf(stderr, "Example: 1 2 256 0 150\n");
         return 3;
     }
     argc --;
     argv ++;
 
-    double x1, x2, min, max, mut;
-    unsigned gen_count, pop_count;
+    double x1, x2, center, delta;
+    unsigned pop_count;
     if(1 != sscanf(argv[0], "%lf", &x1)
             || 1 != sscanf(argv[1], "%lf", &x2)
-            || 1 != sscanf(argv[2], "%u", &gen_count)
-            || 1 != sscanf(argv[3], "%u", &pop_count)
-            || 1 != sscanf(argv[4], "%lf", &min)
-            || 1 != sscanf(argv[5], "%lf", &max)
-            || 1 != sscanf(argv[6], "%lf", &mut)) {
+            || 1 != sscanf(argv[2], "%u", &pop_count)
+            || 1 != sscanf(argv[3], "%lf", &center)
+            || 1 != sscanf(argv[4], "%lf", &delta)) {
         fprintf(stderr, "Invalid value\n");
         return 4;
     }
-    qe_evol_reverse(x1, x2, gen_count, pop_count, min, max, mut);
+    qe_evol_reverse(x1, x2, pop_count, center, delta);
     return 0;
 }
 
@@ -201,16 +199,16 @@ int main(int argc, char* argv[])
     if(argc < 2) {
         fprintf(stderr, "Usage: %s <subcommand> <arguments>\n", argv[0]);
         fprintf(stderr, "Subcommands:\n");
-        fprintf(stderr, "\tevol-quad\n");
-        fprintf(stderr, "\tevol-quad-reverse\n");
+        fprintf(stderr, "\tquad\n");
+        fprintf(stderr, "\tquad-reverse\n");
         return 1;
     }
     argc --;
     argv ++;
     srand48(time(0));
-    if(!strcmp(*argv, "evol-quad"))
+    if(!strcmp(*argv, "quad"))
         return cmd_qe_evol(argc, argv);
-    if(!strcmp(*argv, "evol-quad-reverse"))
+    if(!strcmp(*argv, "quad-reverse"))
         return cmd_qe_evol_reverse(argc, argv);
     fprintf(stderr, "Unknown subcommand: %s\n", *argv);
     return 2;
