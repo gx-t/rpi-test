@@ -183,9 +183,9 @@ flac: 19-flac
 	$(CC) $(REL) -Wno-unused-function -o 22-temp-cgi 22-temp-cgi.c
 
 23-deb:
-	$(CC) -g $(MFLAGS) -o 23-bench 23-bench.c -lcrypto
+	$(CC) -g $(MFLAGS) -o 23-bench 23-bench.c -ldl
 23-rel:
-	$(CC) -O3 -s $(MFLAGS) -o 23-bench 23-bench.c -lcrypto
+	$(CC) -O3 -s $(MFLAGS) -o 23-bench 23-bench.c -ldl
 
 24-deb:
 	$(CC) -g $(MFLAGS) -o 24-openssl-tests 24-openssl-tests.c -lcrypto
@@ -197,6 +197,7 @@ clean:
 
 tag:
 	ctags -R . /usr/include/ /opt/vc/include/ /usr/lib/gcc/arm-linux-gnueabihf/6/include
+	cscope -bcqR -I /usr/include/ -I .
 
 asm:
 #	$(CC) -c -O2 -mcpu=cortex-a53 -mfpu=neon 02-neon.c -mtune=cortex-a53 -Wa,-a,-ad > 02-neon.asm

@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <time.h>
+#include <dlfcn.h>
 #include <openssl/bn.h>
 #ifdef __ARM_ARCH
 #include <arm_neon.h>
@@ -8,6 +9,35 @@
 
 #define PI              
 #define FREQ_F32(f_)	((f_) * 2 * 3.14159265358979323846 / 96000)
+
+struct
+{
+    void* dll;
+    BIGNUM* (*bn_new)(void);
+    void (*bn_free)(BIGNUM *a);
+    int (*bn_generate_prime_ex)(BIGNUM *ret, int bits, int safe, const BIGNUM *add, const BIGNUM *rem, BN_GENCB *cb);
+} crypto = {0};
+
+static void crypto_load_so()
+{
+    const char* dll_name = "libcrypto.so";
+    crypto.dll = dlopen(dll_name, RTLD_LAZY);
+    if(!crypto.dll)
+    {
+        perror(dll_name);
+        return;
+    }
+    crypto.bn_new               = dlsym(crypto.dll, "BN_new");
+    crypto.bn_free              = dlsym(crypto.dll, "BN_free");
+    crypto.bn_generate_prime_ex = dlsym(crypto.dll, "BN_generate_prime_ex");
+}
+
+static void crypto_free_so()
+{
+    if(!crypto.dll)
+        return;
+    dlclose(crypto.dll);
+}
 
 static int run_under_clock_in_loop(const char* label, void (*proc)(), uint32_t run_count)
 {
@@ -121,27 +151,27 @@ static void bench_float_32x4()
 
 static void bench_openssl_gen_prime()
 {
-    BIGNUM* p = BN_new();
+    BIGNUM* p = crypto.bn_new();
     volatile BIGNUM* vp = NULL;
-    if(!BN_generate_prime_ex(p, 1024, 0, NULL, NULL, NULL))
-    {
+    if(!crypto.bn_generate_prime_ex(p, 1024, 0, NULL, NULL, NULL))
         fprintf(stderr, "Error generating prime number\n");
-        return;
-    }
     vp = p;
-    BN_free(p);
+    crypto.bn_free(p);
 }
 
 int main()
 {
+    crypto_load_so();
     run_under_clock("float", bench_float);
     run_under_clock("double", bench_double);
     run_under_clock("uin64, recursion", bench_uint64_fibonacci);
-    run_under_clock_in_loop("openssl 1024 bit random prime", bench_openssl_gen_prime, 32);
+    if(crypto.dll)
+        run_under_clock_in_loop("openssl 1024 bit random prime", bench_openssl_gen_prime, 32);
 #ifdef __ARM_ARCH
     run_under_clock("neon 32x4", bench_neon_32x4);
     run_under_clock("float 32x4", bench_float_32x4);
 #endif // __ARM_ARCH
+    crypto_free_so();
     return 0;
 }
 
