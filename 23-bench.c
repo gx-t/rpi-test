@@ -63,6 +63,7 @@ static int run_under_clock_in_loop(const char* label, void (*proc)(), uint32_t r
     }
     avg_time /= run_count;
     printf("%f/%f/%f sec\n", min_time, max_time, avg_time);
+    return 0;
 }
 
 static int run_under_clock(const char* label, void (*proc)())
@@ -85,7 +86,7 @@ static uint64_t fib_uint64(uint64_t n) {
 static void bench_float()
 {
     volatile float d1, d2;
-    float c, s;
+    float c = 1.0, s = 0.0;
     const float f = FREQ_F32(1000.0);
     uint32_t i = 100000000;
     while(i --)
@@ -100,7 +101,7 @@ static void bench_float()
 static void bench_double()
 {
     volatile double d1, d2;
-    double c, s;
+    double c = 1.0, s = 0.0;
     const double f = FREQ_F32(1000.0);
     uint32_t i = 100000000;
     while(i --)

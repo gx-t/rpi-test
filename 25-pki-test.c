@@ -3,6 +3,12 @@
 #include <openssl/rsa.h>
 #include <openssl/err.h>
 
+static void http_header()
+{
+    fprintf(stdout, "Content-type: application/json; charset=UTF-8\n\n");
+    fflush(stdout);
+}
+
 static char* err_openssl()
 {
     return ERR_error_string(ERR_get_error(), NULL);
@@ -25,64 +31,64 @@ static void err_generate_rsa()
 
 static void f_dump_rsa(const RSA* rsa)
 {
-    printf("{n:'");
+    printf("{\"n\":\"");
     BN_print_fp(stdout, RSA_get0_n(rsa));
-    printf("',e:'");
+    printf("\",\"e\":\"");
     BN_print_fp(stdout, RSA_get0_e(rsa));
-    printf("',d:'");
+    printf("\",\"d\":\"");
     BN_print_fp(stdout, RSA_get0_d(rsa));
-    printf("',p:'");
+    printf("\",\"p\":\"");
     BN_print_fp(stdout, RSA_get0_p(rsa));
-    printf("',q:'");
+    printf("\",\"q\":\"");
     BN_print_fp(stdout, RSA_get0_q(rsa));
-    printf("',dmp1:'");
+    printf("\",\"dp\":\"");
     BN_print_fp(stdout, RSA_get0_dmp1(rsa));
-    printf("',dmq1:'");
+    printf("\",\"dq\":\"");
     BN_print_fp(stdout, RSA_get0_dmq1(rsa));
-    printf("',iqmp:'");
+    printf("\",\"iqmp\":\"");
     BN_print_fp(stdout, RSA_get0_iqmp(rsa));
-    printf("'}\n");
+    printf("\"}\n");
 }
 
-static void test_gen_prime(int bits)
-{
-    BIGNUM* p = BN_new();
-    BIGNUM* q = BN_new();
-    if(!p || !q)
-    {
-        err_allocate();
-        goto cleanup;
-    }
-    if(!BN_generate_prime_ex(p, bits, 0, NULL, NULL, NULL))
-    {
-        err_generate_prime("p");
-        goto cleanup;
-    }
-    if(!BN_generate_prime_ex(q, bits, 0, NULL, NULL, NULL))
-    {
-        err_generate_prime("q");
-        goto cleanup;
-    }
-    char* ss = BN_bn2hex(p);
-    if(!ss)
-    {
-        err_allocate();
-        goto cleanup;
-    }
-    printf("p = %s\n", ss);
-    OPENSSL_free(ss);
-    ss = BN_bn2hex(q);
-    if(!ss)
-    {
-        err_allocate();
-        goto cleanup;
-    }
-    printf("q = %s\n", ss);
-    OPENSSL_free(ss);
-cleanup:
-    BN_free(p);
-    BN_free(q);
-}
+//static void test_gen_prime(int bits)
+//{
+//    BIGNUM* p = BN_new();
+//    BIGNUM* q = BN_new();
+//    if(!p || !q)
+//    {
+//        err_allocate();
+//        goto cleanup;
+//    }
+//    if(!BN_generate_prime_ex(p, bits, 0, NULL, NULL, NULL))
+//    {
+//        err_generate_prime("p");
+//        goto cleanup;
+//    }
+//    if(!BN_generate_prime_ex(q, bits, 0, NULL, NULL, NULL))
+//    {
+//        err_generate_prime("q");
+//        goto cleanup;
+//    }
+//    char* ss = BN_bn2hex(p);
+//    if(!ss)
+//    {
+//        err_allocate();
+//        goto cleanup;
+//    }
+//    printf("p = %s\n", ss);
+//    OPENSSL_free(ss);
+//    ss = BN_bn2hex(q);
+//    if(!ss)
+//    {
+//        err_allocate();
+//        goto cleanup;
+//    }
+//    printf("q = %s\n", ss);
+//    OPENSSL_free(ss);
+//cleanup:
+//    BN_free(p);
+//    BN_free(q);
+//}
 
 static void test_rsa_generate()
 {
@@ -112,7 +118,7 @@ cleanup:
 
 int main(int argc, char* argv[])
 {
-    test_gen_prime(512);
+    http_header();
     test_rsa_generate();
     return 0;
 }
