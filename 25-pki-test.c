@@ -45,7 +45,7 @@ static void f_dump_rsa(const RSA* rsa)
     BN_print_fp(stdout, RSA_get0_dmp1(rsa));
     printf("\",\"dq\":\"");
     BN_print_fp(stdout, RSA_get0_dmq1(rsa));
-    printf("\",\"iqmp\":\"");
+    printf("\",\"qinv\":\"");
     BN_print_fp(stdout, RSA_get0_iqmp(rsa));
     printf("\"}\n");
 }
