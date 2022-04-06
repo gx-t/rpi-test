@@ -1,7 +1,18 @@
 #include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 #include <openssl/bn.h>
 #include <openssl/rsa.h>
 #include <openssl/err.h>
+
+static char* get_query_token(char** pp)
+{
+    char* token = *pp;
+    while(**pp && **pp != '&') (*pp) ++;
+    if(**pp)
+        *(*pp)++ = 0;
+    return token;
+}
 
 static void http_header()
 {
@@ -19,19 +30,31 @@ static void err_allocate()
     fprintf(stderr, "Cannot allocate memory\n");
 }
 
-static void err_generate_prime(const char* var_name)
-{
-    fprintf(stderr, "Error generating prime number %s\n", var_name);
-}
-
 static void err_generate_rsa()
 {
     fprintf(stderr, "Error generating RSA key\n%s\n", err_openssl());
 }
 
+//static void json_print_bn(const char* var_name, const BIGNUM* bn)
+//{
+//    int len = BN_num_bytes(bn);
+//    uint8_t bin[len];
+//    uint8_t* pp = bin;
+//    BN_bn2bin(bn, bin);
+//    printf("\"%s\":\"");
+//    while(len --)
+//    {
+//        printf("%02X", *pp);
+//        pp ++;
+//    }
+//    printf("\"");
+//
+//}
+
 static void f_dump_rsa(const RSA* rsa)
 {
-    printf("{\"n\":\"");
+    printf("{\"len\":\"%d", RSA_bits(rsa));
+    printf("\",\"n\":\"");
     BN_print_fp(stdout, RSA_get0_n(rsa));
     printf("\",\"e\":\"");
     BN_print_fp(stdout, RSA_get0_e(rsa));
@@ -50,76 +73,65 @@ static void f_dump_rsa(const RSA* rsa)
     printf("\"}\n");
 }
 
-//static void test_gen_prime(int bits)
-//{
-//    BIGNUM* p = BN_new();
-//    BIGNUM* q = BN_new();
-//    if(!p || !q)
-//    {
-//        err_allocate();
-//        goto cleanup;
-//    }
-//    if(!BN_generate_prime_ex(p, bits, 0, NULL, NULL, NULL))
-//    {
-//        err_generate_prime("p");
-//        goto cleanup;
-//    }
-//    if(!BN_generate_prime_ex(q, bits, 0, NULL, NULL, NULL))
-//    {
-//        err_generate_prime("q");
-//        goto cleanup;
-//    }
-//    char* ss = BN_bn2hex(p);
-//    if(!ss)
-//    {
-//        err_allocate();
-//        goto cleanup;
-//    }
-//    printf("p = %s\n", ss);
-//    OPENSSL_free(ss);
-//    ss = BN_bn2hex(q);
-//    if(!ss)
-//    {
-//        err_allocate();
-//        goto cleanup;
-//    }
-//    printf("q = %s\n", ss);
-//    OPENSSL_free(ss);
-//cleanup:
-//    BN_free(p);
-//    BN_free(q);
-//}
-
-static void test_rsa_generate()
+static int f_rsa_generate(char* pp)
 {
-    BIGNUM* e = BN_new();
+    RSA* rsa = NULL;
+    BIGNUM* e = NULL;
+
+    int cleanup(int ret)
+    {
+        RSA_free(rsa);
+        BN_free(e);
+        return ret;
+    }
+
+    int len = 0;
+    unsigned long pub_exp = 0;
+    char* str_len = get_query_token(&pp);
+        len = atoi(str_len);
+
+    if(len < 512 || len > 4096)
+        len = 1024;
+   
+   char* str_pub_exp = get_query_token(&pp);
+   pub_exp = atoi(str_pub_exp);
+
+   if(pub_exp < 3 || pub_exp > 65537)
+       pub_exp = 65537;
+
+    e = BN_new();
     if(!e)
     {
         err_allocate();
-        return;
+        return cleanup(1);
     }
-    BN_set_word(e, 65537);
-    RSA* rsa = RSA_new();
+    BN_set_word(e, pub_exp);
+    rsa = RSA_new();
     if(!rsa)
     {
         err_allocate();
-        goto cleanup;
+        return cleanup(1);
     }
-    if(!RSA_generate_key_ex(rsa, 1024, e, NULL))
+    if(!RSA_generate_key_ex(rsa, len, e, NULL))
     {
         err_generate_rsa();
-        goto cleanup;
+        return cleanup(1);
     }
     f_dump_rsa(rsa);
-cleanup:
-    RSA_free(rsa);
-    BN_free(e);
+    return cleanup(0);
 }
 
 int main(int argc, char* argv[])
 {
     http_header();
-    test_rsa_generate();
-    return 0;
+
+    char* pp = getenv("QUERY_STRING");
+    if(!pp)
+        return 1;
+
+    char* cmd = get_query_token(&pp); 
+    if(!strcmp("rsagen", cmd))
+        return f_rsa_generate(pp);
+    return 1;
 }
 
