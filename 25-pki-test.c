@@ -35,41 +35,38 @@ static void err_generate_rsa()
     fprintf(stderr, "Error generating RSA key\n%s\n", err_openssl());
 }
 
-//static void json_print_bn(const char* var_name, const BIGNUM* bn)
-//{
-//    int len = BN_num_bytes(bn);
-//    uint8_t bin[len];
-//    uint8_t* pp = bin;
-//    BN_bn2bin(bn, bin);
-//    printf("\"%s\":\"");
-//    while(len --)
-//    {
-//        printf("%02X", *pp);
-//        pp ++;
-//    }
-//    printf("\"");
-//
-//}
+static void f_print_bn(const BIGNUM* bn)
+{
+    int len = BN_num_bytes(bn);
+    uint8_t bin[len];
+    uint8_t* pp = bin;
+    BN_bn2bin(bn, bin);
+    while(len --)
+    {
+        printf("%02X", *pp);
+        pp ++;
+    }
+}
 
 static void f_dump_rsa(const RSA* rsa)
 {
     printf("{\"len\":\"%d", RSA_bits(rsa));
     printf("\",\"n\":\"");
-    BN_print_fp(stdout, RSA_get0_n(rsa));
+    f_print_bn(RSA_get0_n(rsa));
     printf("\",\"e\":\"");
-    BN_print_fp(stdout, RSA_get0_e(rsa));
+    f_print_bn(RSA_get0_e(rsa));
     printf("\",\"d\":\"");
-    BN_print_fp(stdout, RSA_get0_d(rsa));
+    f_print_bn(RSA_get0_d(rsa));
     printf("\",\"p\":\"");
-    BN_print_fp(stdout, RSA_get0_p(rsa));
+    f_print_bn(RSA_get0_p(rsa));
     printf("\",\"q\":\"");
-    BN_print_fp(stdout, RSA_get0_q(rsa));
+    f_print_bn(RSA_get0_q(rsa));
     printf("\",\"dp\":\"");
-    BN_print_fp(stdout, RSA_get0_dmp1(rsa));
+    f_print_bn(RSA_get0_dmp1(rsa));
     printf("\",\"dq\":\"");
-    BN_print_fp(stdout, RSA_get0_dmq1(rsa));
+    f_print_bn(RSA_get0_dmq1(rsa));
     printf("\",\"qinv\":\"");
-    BN_print_fp(stdout, RSA_get0_iqmp(rsa));
+    f_print_bn(RSA_get0_iqmp(rsa));
     printf("\"}\n");
 }
 
