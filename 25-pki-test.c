@@ -96,6 +96,8 @@ static int f_rsa_generate(char* pp)
    if(pub_exp < 3 || pub_exp > 65537)
        pub_exp = 65537;
 
+    pub_exp |= 1;
+
     e = BN_new();
     if(!e)
     {
