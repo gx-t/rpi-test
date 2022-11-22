@@ -95,6 +95,8 @@ flac: 19-flac
 	$(CC) $(REL) -o 12-evol 12-evol.c
 12-prof:
 	$(CC) $(PROF) -o 12-evol 12-evol.c
+	./12-evol quad 2 -4 -2 100000 256 -100.0 100.0 1.0
+	gprof ./12-evol | python gprof2dot.py | dot -Tpng -o 12-callgraph.png
 # make 12-prof
 # ./12-evol evol-quad-eq 2 -4 -2 100000 256 -100.0 100.0 1.0
 # gprof 12-evol
