@@ -178,6 +178,8 @@ flac: 19-flac
 	$(CC) $(REL) -o 21-nrf24l01 21-nrf24l01.c -pthread -lpigpio
 	sudo chown root 21-nrf24l01
 	sudo chmod +s 21-nrf24l01
+21-cflow:
+	cflow --omit-arguments 21-nrf24l01.c -f dot  | dot -Tpng -o 21-nrf24l01.png
 
 22-deb:
 	$(CC) $(DEB) -Wno-unused-function -o 22-temp-cgi 22-temp-cgi.c
