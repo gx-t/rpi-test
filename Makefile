@@ -189,9 +189,9 @@ flac: 19-flac
 	$(CC) $(REL) -Wno-unused-function -o 22-temp-cgi 22-temp-cgi.c
 
 23-deb:
-	$(CC) $(DEB) $(MFLAGS) -Wno-unused-but-set-variable -o 23-bench 23-bench.c -ldl
+	$(CC) $(DEB) $(MFLAGS) -Wno-unused-but-set-variable -o 23-bench 23-bench.c
 23-rel:
-	$(CC) $(REL) $(MFLAGS) -Wno-unused-but-set-variable -o 23-bench 23-bench.c -ldl
+	$(CC) $(REL) $(MFLAGS) -Wno-unused-but-set-variable -o 23-bench 23-bench.c
 
 24-deb:
 	$(CC) $(DEB) -o 24-openssl-tests 24-openssl-tests.c -lcrypto

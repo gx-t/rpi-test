@@ -99,7 +99,7 @@ static void test_rsa_generate()
         err_allocate();
         goto cleanup;
     }
-    if(!RSA_generate_key_ex(rsa, 1024, e, NULL))
+    if(!RSA_generate_key_ex(rsa, 4096, e, NULL))
     {
         err_generate_rsa();
         goto cleanup;
@@ -112,7 +112,7 @@ cleanup:
 
 int main(int argc, char* argv[])
 {
-    test_gen_prime(512);
+    test_gen_prime(4096);
     test_rsa_generate();
     return 0;
 }
