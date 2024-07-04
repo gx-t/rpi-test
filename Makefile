@@ -204,7 +204,7 @@ flac: 19-flac
 	$(CC) $(REL) -o 25-pki-test.cgi 25-pki-test.c -lcrypto
 
 clean:
-	rm -rf 00-mouse 01-keyboard 02-neon 03-camera 04-stream 05-neon 06-fb 07-chirp 08-resonance 09-noise 10-resonance 11-sweep 12-evol 13-lora-tx 14-lora-rx 15-udp 16-png-evol 17-raw-evol 18-ffmpeg-evol 19-ring 20-ll 21-nrf24l01 22-temp-cgi 23-bench 24-openssl-tests 25-pki-test.cgi ./tags *.s rm mp4/*.mp4 flac/*.flac ogg/*.ogg
+	rm -rf 00-mouse 01-keyboard 02-neon 03-camera 04-stream 05-neon 06-fb 07-chirp 08-resonance 09-noise 10-resonance 11-sweep 12-evol 13-lora-tx 14-lora-rx 15-udp 16-png-evol 17-raw-evol 18-ffmpeg-evol 19-ring 20-ll 21-nrf24l01 22-temp-cgi 23-bench 24-openssl-tests 25-pki-test.cgi ./tags *.s rm mp4/*.mp4 flac/*.flac ogg/*.ogg *.dSYM
 
 tag:
 	ctags -R . /usr/include/ /opt/vc/include/ /usr/lib/gcc/arm-linux-gnueabihf/6/include
