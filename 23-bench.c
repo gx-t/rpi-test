@@ -86,7 +86,8 @@ static void bench_double()
 
 static void bench_uint64_fibonacci()
 {
-    fib_uint64(47);
+    volatile uint64_t d;
+    d = fib_uint64(47);
 }
 
 #ifdef __ARM_ARCH
