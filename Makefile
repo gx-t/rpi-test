@@ -2,7 +2,7 @@
 MAKEFLAGS+=-j 32
 CC=gcc
 DEB=-Wall -g
-REL=-Wall -O3 -s
+REL=-Wall -O3
 PROF=-Wall -pg
 VCLIB=/opt/vc/lib/
 VCINC=/opt/vc/include/
@@ -187,11 +187,13 @@ flac: 19-flac
 	$(CC) $(DEB) -Wno-unused-function -o 22-temp-cgi 22-temp-cgi.c
 22-rel:
 	$(CC) $(REL) -Wno-unused-function -o 22-temp-cgi 22-temp-cgi.c
+	strip 22-temp-cgi
 
 23-deb:
 	$(CC) $(DEB) $(MFLAGS) -Wno-unused-but-set-variable -o 23-bench 23-bench.c
 23-rel:
 	$(CC) $(REL) $(MFLAGS) -Wno-unused-but-set-variable -o 23-bench 23-bench.c
+	strip 22-bench
 
 24-deb:
 	$(CC) $(DEB) -o 24-openssl-tests 24-openssl-tests.c -lcrypto

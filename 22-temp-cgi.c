@@ -13,28 +13,28 @@ static void sql_title(FILE* ff, const char* title)
 static void sql_start_end_date(FILE* ff)
 {
     const char* sql = "select '\n-- '||date(min(time), 'localtime')||'...'||date(max(time), 'localtime')||'' from data;\n";
-    fprintf(ff, sql);
+    fprintf(ff, "%s", sql);
 }
 
 static void sql_last(FILE* ff)
 {
     sql_title(ff, "վերջին չափումը");
     const char* sql = "select '-- '||time||'  '||value||'' from data order by time desc limit 1;";
-    fprintf(ff, sql);
+    fprintf(ff, "%s", sql);
 }
 
 static void sql_global_min(FILE* ff)
 {
     sql_title(ff, "Բոլոր չափումների ամենացուրտը");
     const char* sql = "select '-- '||time||'  '||value||'' from data where value == (select min(value) from data);";
-    fprintf(ff, sql);
+    fprintf(ff, "%s", sql);
 }
 
 static void sql_global_max(FILE* ff)
 {
     sql_title(ff, "Բոլոր չափումների ամենատաքը");
     const char* sql = "select '-- '||time||'  '||value||'' from data where value == (select max(value) from data);";
-    fprintf(ff, sql);
+    fprintf(ff, "%s", sql);
 }
 
 static void sql_24_hour_min(FILE* ff, int offset)
