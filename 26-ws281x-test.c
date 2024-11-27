@@ -145,8 +145,8 @@ static ws2811_return_t effect_01()
 {
     ws2811_return_t ret = WS2811_SUCCESS;
 
-    float c[8] = {0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99}, s[8] = {0};
-    const float f[8] = {0.01, 0.011, 0.012, 0.013, 0.014, 0.001, 0.0011, 0.0012};
+    float c[8] = {0.999, 0.00, 0.00, 0.00, 0.00, 0.99, 0.99, 0.99}, s[8] = {0};
+    float f[8] = {0.01, 0.01, 0.012, 0.013, 0.014, 0.001, 0.0011, 0.0012};
     uint32_t si[16] = {0};
     uint32_t ci[16] = {0};
 
@@ -168,17 +168,19 @@ static ws2811_return_t effect_01()
         erase_leds(si);
         erase_leds(ci);
         step_8(c, s, f);
+        f[0] += c[6] * 0.00001;
+//        f[1] += c[5] * 0.00001;
 
         push_16(si, (int)((s[0] * s[0]
                         + s[1] * s[1]
                         + s[2] * s[2]
                         + s[3] * s[3]
-                        + s[4] * s[4]) / 5 * led_string.channel[0].count));
+                        + s[4] * s[4]) / 1 * led_string.channel[0].count));
         push_16(ci, (int)((c[0] * c[0]
                         + c[1] * c[1]
                         + c[2] * c[2]
                         + c[3] * c[3]
-                        + c[4] * c[4]) / 5 * led_string.channel[0].count));
+                        + c[4] * c[4]) / 1 * led_string.channel[0].count));
 
         fill_leds_16(si, (float[]){s[5] * s[5] / 2, s[6] * s[6] / 2, s[7] * s[7] / 2});
         fill_leds_16(ci, (float[]){c[5] * c[5] / 2, c[6] * c[6] / 2, c[7] * c[7] / 2});
