@@ -91,47 +91,78 @@ static void fill_colors_16(const uint32_t arr[16], const float head_clr[3])
     }
 }
 
-static void time_step(float c[4], float s[4], const float f[4])
-{
-    for(int i = 0; i < 4; i ++)
-    {
-        c[i] -= s[i] * f[i];
-        s[i] += c[i] * f[i];
-    }
-}
-
-static ws2811_return_t effect_01(uint32_t start, uint32_t count)
+static ws2811_return_t effect_01()
 {
     ws2811_return_t ret = WS2811_SUCCESS;
 
     float c[8] = {0.999, 0.99, 0.99, 0.99}, s[8] = {0};
-    float f[8] = {0.01, 0.001, 0.0011, 0.0012};
+    float fp = 0.01;
+    float y = 0.999, v = 0.0;
     uint32_t si[16] = {0};
     uint32_t ci[16] = {0};
+    uint32_t pi[16] = {0};
+    const float clr_tbl[7][3] =
+    {
+        {0.99, 0.00, 0.00},
+        {0.50, 0.00, 0.50},
+        {0.50, 0.50, 0.00},
+        {0.00, 0.99, 0.00},
+        {0.00, 0.50, 0.50},
+        {0.00, 0.00, 0.99},
+        {0.33, 0.33, 0.33},
+    };
 
     led_string.channel[0].brightness = 0xFF;
 
-    set_pos_16(si, start + (uint32_t)(s[0] * s[0] * count));
-    set_pos_16(ci, start + (uint32_t)(c[0] * c[0] * count));
+    set_pos_16(si, 144 + (uint32_t)(s[0] * s[0] * 144));
+    set_pos_16(ci, 144 + (uint32_t)(c[0] * c[0] * 144));
+    set_pos_16(pi, 0 + (uint32_t)(y * 144));
 
+    const float* clr = clr_tbl[rand() % 7];
     while(running)
     {
         erase_leds(si);
         erase_leds(ci);
-        time_step(c, s, f);
-        f[0] += c[2] * 0.00001;
+        erase_leds(pi);
 
-        push_pos_16(si, start + (uint32_t)(s[0] * s[0] * count));
-        push_pos_16(ci, start + (uint32_t)(c[0] * c[0] * count));
+        c[0] -= s[0] * fp;
+        s[0] += c[0] * fp;
+        c[1] -= s[1] * 0.001;
+        s[1] += c[1] * 0.001;
+        c[2] -= s[2] * 0.0011;
+        s[2] += c[2] * 0.0011;
+        c[3] -= s[3] * 0.0012;
+        s[3] += c[3] * 0.0012;
+
+        fp += c[2] * 0.00001;
+
+        v += (-0.00009);
+        y += v;
+        v -= 0.0005 * v;
+        if(y <= 0.0)
+        {
+            y = 0.0;
+            v = (-v);
+            if(v < 0.005)
+            {
+                v = 0.01377;
+                clr = clr_tbl[rand() % 6];
+            }
+        }
+
+        push_pos_16(si, 144 + (uint32_t)(s[0] * s[0] * 144));
+        push_pos_16(ci, 144 + (uint32_t)(c[0] * c[0] * 144));
+        push_pos_16(pi, 0 + (uint32_t)(y * 144));
         fill_colors_16(si, (float[]){s[1] * s[1] / 2, s[2] * s[2] / 2, s[3] * s[3] / 2});
         fill_colors_16(ci, (float[]){c[1] * c[1] / 2, c[2] * c[2] / 2, c[3] * c[3] / 2});
+        fill_colors_16(pi, clr);
 
         if((ret = ws2811_render(&led_string)) != WS2811_SUCCESS)
         {
             fprintf(stderr, "ws2811_render failed: %s\n", ws2811_get_return_t_str(ret));
             break;
         }
-        usleep(1000000 / 100);
+        usleep(1000000/100);
     }
     return ret;
 }
@@ -149,7 +180,7 @@ int main(int argc, char *argv[])
         return ret;
     }
 
-    (void)((ret = effect_01(144, 144))
+    (void)((ret = effect_01())
             || (ret = leds_off()));
 
     ws2811_fini(&led_string);
