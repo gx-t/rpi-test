@@ -19,7 +19,7 @@ static ws2811_t led_string =
         {
             .gpionum = 18,
             .invert = 0,
-            .count = 144,
+            .count = 288,
             .strip_type = WS2811_STRIP_GBR,
             .brightness = 255,
         },
@@ -91,16 +91,16 @@ static void fill_colors_16(const uint32_t arr[16], const float head_clr[3])
     }
 }
 
-static void step_8(float c[8], float s[8], const float f[8])
+static void time_step(float c[4], float s[4], const float f[4])
 {
-    for(int i = 0; i < 8; i ++)
+    for(int i = 0; i < 4; i ++)
     {
         c[i] -= s[i] * f[i];
         s[i] += c[i] * f[i];
     }
 }
 
-static ws2811_return_t effect_01()
+static ws2811_return_t effect_01(uint32_t start, uint32_t count)
 {
     ws2811_return_t ret = WS2811_SUCCESS;
 
@@ -111,18 +111,18 @@ static ws2811_return_t effect_01()
 
     led_string.channel[0].brightness = 0xFF;
 
-    set_pos_16(si, (uint32_t)(s[0] * s[0] * led_string.channel[0].count));
-    set_pos_16(ci, (uint32_t)(c[0] * c[0] * led_string.channel[0].count));
+    set_pos_16(si, start + (uint32_t)(s[0] * s[0] * count));
+    set_pos_16(ci, start + (uint32_t)(c[0] * c[0] * count));
 
     while(running)
     {
         erase_leds(si);
         erase_leds(ci);
-        step_8(c, s, f);
+        time_step(c, s, f);
         f[0] += c[2] * 0.00001;
 
-        push_pos_16(si, (uint32_t)(s[0] * s[0] * led_string.channel[0].count));
-        push_pos_16(ci, (uint32_t)(c[0] * c[0] * led_string.channel[0].count));
+        push_pos_16(si, start + (uint32_t)(s[0] * s[0] * count));
+        push_pos_16(ci, start + (uint32_t)(c[0] * c[0] * count));
         fill_colors_16(si, (float[]){s[1] * s[1] / 2, s[2] * s[2] / 2, s[3] * s[3] / 2});
         fill_colors_16(ci, (float[]){c[1] * c[1] / 2, c[2] * c[2] / 2, c[3] * c[3] / 2});
 
@@ -149,7 +149,7 @@ int main(int argc, char *argv[])
         return ret;
     }
 
-    (void)((ret = effect_01())
+    (void)((ret = effect_01(144, 144))
             || (ret = leds_off()));
 
     ws2811_fini(&led_string);
