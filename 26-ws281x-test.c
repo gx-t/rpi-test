@@ -91,26 +91,29 @@ static void fill_colors_16(const uint32_t arr[16], const float head_clr[3])
     }
 }
 
+static void rand_color(float clr[3])
+{
+    float red = (float)rand() / RAND_MAX;
+    float green = (float)rand() / RAND_MAX;
+    float blue = (float)rand() / RAND_MAX;
+    float coef = 1.0 / (red + green + blue);
+    clr[0] = red * coef;
+    clr[1] = green * coef;
+    clr[2] = blue * coef;
+}
+
 static ws2811_return_t effect_01()
 {
     ws2811_return_t ret = WS2811_SUCCESS;
 
     float c[8] = {0.999, 0.99, 0.99, 0.99}, s[8] = {0};
     float fp = 0.01;
-    float y = 0.999, v = 0.0;
+    float y = 0.0, v = 0.01342;
     uint32_t si[16] = {0};
     uint32_t ci[16] = {0};
     uint32_t pi[16] = {0};
-    const float clr_tbl[7][3] =
-    {
-        {0.99, 0.00, 0.00},
-        {0.50, 0.00, 0.50},
-        {0.50, 0.50, 0.00},
-        {0.00, 0.99, 0.00},
-        {0.00, 0.50, 0.50},
-        {0.00, 0.00, 0.99},
-        {0.33, 0.33, 0.33},
-    };
+    float clr[3];
+    rand_color(clr);
 
     led_string.channel[0].brightness = 0xFF;
 
@@ -118,7 +121,6 @@ static ws2811_return_t effect_01()
     set_pos_16(ci, 144 + (uint32_t)(c[0] * c[0] * 144));
     set_pos_16(pi, 0 + (uint32_t)(y * 144));
 
-    const float* clr = clr_tbl[rand() % 7];
     while(running)
     {
         erase_leds(si);
@@ -138,15 +140,15 @@ static ws2811_return_t effect_01()
 
         v += (-0.00009);
         y += v;
-        v -= 0.0005 * v;
         if(y <= 0.0)
         {
             y = 0.0;
             v = (-v);
-            if(v < 0.005)
+            v *= 0.9;
+            if(v < 0.0015)
             {
-                v = 0.01377;
-                clr = clr_tbl[rand() % 6];
+                v = 0.01342;
+                rand_color(clr);
             }
         }
 
