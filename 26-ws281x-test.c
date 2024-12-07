@@ -105,7 +105,7 @@ static void rand_color(float clr[3])
 struct FALLING_OBJ
 {
     float y, v;
-    uint32_t ttl;
+    int ttl;
     uint32_t tail_coord[16];
     float clr[3];
 };
@@ -121,19 +121,18 @@ static void init_falling_obj(struct FALLING_OBJ* self)
 
 static void step_falling_obj(struct FALLING_OBJ* self)
 {
-    erase_leds(self->tail_coord);
     self->v += (-0.00009);
     self->y += self->v;
     self->ttl --;
-    if(self->y <= 0.0 || !self->ttl)
+    if(self->y <= 0.0)
     {
         self->y = 0.0;
         self->v = (-self->v);
         self->v *= (1.0/1.25);
-        if(!self->ttl)
+        if(self->ttl <= 0)
             init_falling_obj(self);
     }
-    fill_colors_16(self->tail_coord, self->clr);
+    push_pos_16(self->tail_coord, 0 + (uint32_t)(self->y * 144));
 }
 
 static ws2811_return_t effect_01()
@@ -165,6 +164,8 @@ static ws2811_return_t effect_01()
     {
         erase_leds(si);
         erase_leds(ci);
+        erase_leds(p[0].tail_coord);
+        erase_leds(p[1].tail_coord);
 
         pos_c[0] -= pos_s[0] * 0.01;
         pos_s[0] += pos_c[0] * 0.01;
@@ -193,8 +194,6 @@ static ws2811_return_t effect_01()
                         + pos_c[1] * pos_c[1]
                         + pos_c[2] * pos_c[2]
                         + pos_c[3] * pos_c[3]) / 4.0 * 144));
-        push_pos_16(p[0].tail_coord, 0 + (uint32_t)(p[0].y * 144));
-        push_pos_16(p[1].tail_coord, 0 + (uint32_t)(p[1].y * 144));
 
         fill_colors_16(si, (float[]){
                 clr_s[0] * clr_s[0] / 2
@@ -206,6 +205,9 @@ static ws2811_return_t effect_01()
                 , clr_c[1] * clr_c[1] / 2
                 , clr_c[2] * clr_c[2] / 2
                 });
+
+        fill_colors_16(p[0].tail_coord, p[0].clr);
+        fill_colors_16(p[1].tail_coord, p[1].clr);
 
         if((ret = ws2811_render(&led_string)) != WS2811_SUCCESS)
         {
