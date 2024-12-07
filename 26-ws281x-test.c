@@ -102,62 +102,110 @@ static void rand_color(float clr[3])
     clr[2] = blue * coef;
 }
 
+struct FALLING_OBJ
+{
+    float y, v;
+    uint32_t ttl;
+    uint32_t tail_coord[16];
+    float clr[3];
+};
+
+static void init_falling_obj(struct FALLING_OBJ* self)
+{
+    self->y = 0.0;
+    self->v = 0.01342;
+    self->ttl = 500 + rand() % 900;
+    set_pos_16(self->tail_coord, 0 + (uint32_t)(self->y * 144));
+    rand_color(self->clr);
+}
+
+static void step_falling_obj(struct FALLING_OBJ* self)
+{
+    erase_leds(self->tail_coord);
+    self->v += (-0.00009);
+    self->y += self->v;
+    self->ttl --;
+    if(self->y <= 0.0 || !self->ttl)
+    {
+        self->y = 0.0;
+        self->v = (-self->v);
+        self->v *= (1.0/1.25);
+        if(!self->ttl)
+            init_falling_obj(self);
+    }
+    fill_colors_16(self->tail_coord, self->clr);
+}
+
 static ws2811_return_t effect_01()
 {
     ws2811_return_t ret = WS2811_SUCCESS;
 
-    float c[8] = {0.999, 0.99, 0.99, 0.99}, s[8] = {0};
-    float fp = 0.01;
-    float y = 0.0, v = 0.01342;
+    float pos_c[4] = {0.999, 0.999, 0.999, 0.999}, pos_s[4] = {0};
+    float clr_c[3] = {0.99, 0.99, 0.99}, clr_s[3] = {0};
     uint32_t si[16] = {0};
     uint32_t ci[16] = {0};
-    uint32_t pi[16] = {0};
-    float clr[3];
-    rand_color(clr);
+    struct FALLING_OBJ p[2];
+    init_falling_obj(&p[0]);
+    init_falling_obj(&p[1]);
 
     led_string.channel[0].brightness = 0xFF;
 
-    set_pos_16(si, 144 + (uint32_t)(s[0] * s[0] * 144));
-    set_pos_16(ci, 144 + (uint32_t)(c[0] * c[0] * 144));
-    set_pos_16(pi, 0 + (uint32_t)(y * 144));
+    set_pos_16(si, 144 + (uint32_t)((pos_s[0] * pos_s[0]
+                    + pos_s[1] * pos_s[1]
+                    + pos_s[2] * pos_s[2]
+                    + pos_s[3] * pos_s[3])/ 4.0 * 144));
+
+    set_pos_16(ci, 144 + (uint32_t)((pos_c[0] * pos_c[0]
+                    + pos_c[1] * pos_c[1]
+                    + pos_c[2] * pos_c[2]
+                    + pos_c[3] * pos_c[3]) / 4.0 * 144));
+
 
     while(running)
     {
         erase_leds(si);
         erase_leds(ci);
-        erase_leds(pi);
 
-        c[0] -= s[0] * fp;
-        s[0] += c[0] * fp;
-        c[1] -= s[1] * 0.001;
-        s[1] += c[1] * 0.001;
-        c[2] -= s[2] * 0.0011;
-        s[2] += c[2] * 0.0011;
-        c[3] -= s[3] * 0.0012;
-        s[3] += c[3] * 0.0012;
+        pos_c[0] -= pos_s[0] * 0.01;
+        pos_s[0] += pos_c[0] * 0.01;
+        pos_c[1] -= pos_s[1] * 0.015;
+        pos_s[1] += pos_c[1] * 0.015;
+        pos_c[2] -= pos_s[2] * 0.0225;
+        pos_s[2] += pos_c[2] * 0.0225;
+        pos_c[3] -= pos_s[3] * 0.03375;
+        pos_s[3] += pos_c[3] * 0.03375;
 
-        fp += c[2] * 0.00001;
+        clr_c[0] -= clr_s[0] * 0.001;
+        clr_s[0] += clr_c[0] * 0.001;
+        clr_c[1] -= clr_s[1] * 0.0011;
+        clr_s[1] += clr_c[1] * 0.0011;
+        clr_c[2] -= clr_s[2] * 0.0012;
+        clr_s[2] += clr_c[2] * 0.0012;
 
-        v += (-0.00009);
-        y += v;
-        if(y <= 0.0)
-        {
-            y = 0.0;
-            v = (-v);
-            v *= (1.0/1.25);
-            if(v < 0.0015)
-            {
-                v = 0.01342;
-                rand_color(clr);
-            }
-        }
+        step_falling_obj(&p[0]);
+        step_falling_obj(&p[1]);
 
-        push_pos_16(si, 144 + (uint32_t)(s[0] * s[0] * 144));
-        push_pos_16(ci, 144 + (uint32_t)(c[0] * c[0] * 144));
-        push_pos_16(pi, 0 + (uint32_t)(y * 144));
-        fill_colors_16(si, (float[]){s[1] * s[1] / 2, s[2] * s[2] / 2, s[3] * s[3] / 2});
-        fill_colors_16(ci, (float[]){c[1] * c[1] / 2, c[2] * c[2] / 2, c[3] * c[3] / 2});
-        fill_colors_16(pi, clr);
+        push_pos_16(si, 144 + (uint32_t)((pos_s[0] * pos_s[0]
+                        + pos_s[1] * pos_s[1]
+                        + pos_s[2] * pos_s[2]
+                        + pos_s[3] * pos_s[3])/ 4.0 * 144));
+        push_pos_16(ci, 144 + (uint32_t)((pos_c[0] * pos_c[0]
+                        + pos_c[1] * pos_c[1]
+                        + pos_c[2] * pos_c[2]
+                        + pos_c[3] * pos_c[3]) / 4.0 * 144));
+        push_pos_16(p[0].tail_coord, 0 + (uint32_t)(p[0].y * 144));
+        push_pos_16(p[1].tail_coord, 0 + (uint32_t)(p[1].y * 144));
+
+        fill_colors_16(si, (float[]){
+                clr_s[0] * clr_s[0] / 2
+                , clr_s[1] * clr_s[1] / 2
+                , clr_s[2] * clr_s[2] / 2
+                });
+        fill_colors_16(ci, (float[]){
+                clr_c[0] * clr_c[0] / 2
+                , clr_c[1] * clr_c[1] / 2
+                , clr_c[2] * clr_c[2] / 2
+                });
 
         if((ret = ws2811_render(&led_string)) != WS2811_SUCCESS)
         {
