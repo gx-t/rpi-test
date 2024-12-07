@@ -113,7 +113,7 @@ struct FALLING_OBJ
 static void init_falling_obj(struct FALLING_OBJ* self)
 {
     self->y = 0.0;
-    self->v = 0.01342;
+    self->v = 0.01342 * (3.0/4.0 + (float)rand() / RAND_MAX / 4.0);
     self->ttl = 500 + rand() % 900;
     set_pos_16(self->tail_coord, 0 + (uint32_t)(self->y * 144));
     rand_color(self->clr);
