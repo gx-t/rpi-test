@@ -8,6 +8,7 @@
 #include "ws2811.h"
 
 static uint8_t running = 1;
+#define LED_COUNT       (50 + 144 + 144)
 
 static ws2811_t led_string =
 {
@@ -19,7 +20,7 @@ static ws2811_t led_string =
         {
             .gpionum = 18,
             .invert = 0,
-            .count = 288,
+            .count = LED_COUNT,
             .strip_type = WS2811_STRIP_GBR,
             .brightness = 255,
         },
@@ -115,7 +116,7 @@ static void init_falling_obj(struct FALLING_OBJ* self)
     self->y = 0.0;
     self->v = 0.01345 * (3.0/4.0 + (float)rand() / RAND_MAX / 4.0);
     self->ttl = 500 + rand() % 900;
-    set_pos_16(self->tail_coord, 0 + (uint32_t)(self->y * 288));
+    set_pos_16(self->tail_coord, 50 + (uint32_t)(self->y * 288));
     rand_color(self->clr);
 }
 
@@ -132,7 +133,38 @@ static void step_falling_obj(struct FALLING_OBJ* self)
         if(self->ttl <= 0)
             init_falling_obj(self);
     }
-    push_pos_16(self->tail_coord, 0 + (uint32_t)(self->y * 288));
+    push_pos_16(self->tail_coord, 50 + (uint32_t)(self->y * 288));
+}
+
+struct FADING_DOT
+{
+    int idx;
+    float clr[3];
+    float ttl;
+};
+
+static void init_fading_dot(struct FADING_DOT* self, int idx)
+{
+    self->idx = idx;
+    self->clr[0] = self->clr[1] = self->clr[2] = 0.0;
+    self->ttl = 200 + rand() % 300;
+}
+
+static void step_fading_dot(struct FADING_DOT* self)
+{
+    uint32_t clr_i = (int)(self->clr[0] * 255)
+        | ((int)(self->clr[1] * 255) << 8)
+        | ((int)(self->clr[2] * 255) << 16);
+    led_string.channel[0].leds[self->idx] = clr_i;
+    self->clr[0] *= 0.95;
+    self->clr[1] *= 0.95;
+    self->clr[2] *= 0.95;
+    self->ttl --;
+    if(self->ttl <= 0)
+    {
+        rand_color(self->clr);
+        self->ttl = 200 + rand() % 300;
+    }
 }
 
 static ws2811_return_t effect_01()
@@ -143,6 +175,10 @@ static ws2811_return_t effect_01()
     init_falling_obj(&p[0]);
     init_falling_obj(&p[1]);
 
+    struct FADING_DOT d[50];
+    for(int i = 0; i < sizeof(d) / sizeof(d[0]); i ++)
+        init_fading_dot(&d[i], i);
+
     led_string.channel[0].brightness = 0xFF;
 
     while(running)
@@ -152,6 +188,8 @@ static ws2811_return_t effect_01()
 
         step_falling_obj(&p[0]);
         step_falling_obj(&p[1]);
+        for(int i = 0; i < sizeof(d) / sizeof(d[0]); i ++)
+            step_fading_dot(&d[i]);
 
         fill_colors_16(p[0].tail_coord, p[0].clr);
         fill_colors_16(p[1].tail_coord, p[1].clr);
