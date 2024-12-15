@@ -147,7 +147,7 @@ static void init_fading_dot(struct FADING_DOT* self, int idx)
 {
     self->idx = idx;
     self->clr[0] = self->clr[1] = self->clr[2] = 0.0;
-    self->ttl = 200 + rand() % 300;
+    self->ttl = rand() % 200;
 }
 
 static void step_fading_dot(struct FADING_DOT* self)
@@ -156,14 +156,14 @@ static void step_fading_dot(struct FADING_DOT* self)
         | ((int)(self->clr[1] * 255) << 8)
         | ((int)(self->clr[2] * 255) << 16);
     led_string.channel[0].leds[self->idx] = clr_i;
-    self->clr[0] *= 0.95;
-    self->clr[1] *= 0.95;
-    self->clr[2] *= 0.95;
+    self->clr[0] *= 0.97;
+    self->clr[1] *= 0.97;
+    self->clr[2] *= 0.97;
     self->ttl --;
     if(self->ttl <= 0)
     {
         rand_color(self->clr);
-        self->ttl = 200 + rand() % 300;
+        self->ttl = 100 + rand() % 500;
     }
 }
 
